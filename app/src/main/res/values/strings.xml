@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">CarApp</string>
+    <string name="record_symptom">상황 기록</string>
+    <string name="prompt_anomaly">방금 이상한 느낌 있으셨어요?</string>
+    <string name="recorded">기록했어요</string>
+    <string name="simulated_badge">SIMULATED</string>
+</resources>

@@ -1,0 +1,5 @@
+[
+  { "id": "demo-1", "name": "데모 정비소 A", "latitude": 37.5665, "longitude": 126.9780, "preferred": true },
+  { "id": "demo-2", "name": "데모 정비소 B", "latitude": 37.5700, "longitude": 126.9850 },
+  { "id": "demo-3", "name": "데모 정비소 C", "latitude": 37.5600, "longitude": 126.9700 }
+]
