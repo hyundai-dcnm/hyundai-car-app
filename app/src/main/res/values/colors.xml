@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Pleos light background_primary. 첫 프레임 전 창 배경이 순정 화면과 같게. -->
+    <color name="window_background">#F7F8FA</color>
+</resources>

@@ -19,6 +19,11 @@ android {
         versionCode = appVersionMajor * 10_000 + appVersionMinor * 100 + appVersionPatch
         versionName = "$appVersionMajor.$appVersionMinor.$appVersionPatch"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        // 정비사 웹 리포트(web/mechanic/) 호스팅 주소. QR이 이 주소 + #r=<요약>을 연다.
+        // 로컬 시연은 -Pcarapp.reportWebUrl=http://<노트북 IP>:8000/mechanic/ 로 덮어쓴다.
+        val reportWebUrl = providers.gradleProperty("carapp.reportWebUrl")
+            .getOrElse("https://hyundai-dcnm.github.io/hyundai-car-app/mechanic/")
+        buildConfigField("String", "REPORT_WEB_URL", "\"$reportWebUrl\"")
     }
 
     buildTypes {
@@ -65,6 +70,7 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.zxing.core)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

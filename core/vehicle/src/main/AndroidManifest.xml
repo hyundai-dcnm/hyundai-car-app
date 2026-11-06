@@ -11,4 +11,9 @@
     <uses-permission android:name="pleos.car.permission.CAR_TIRES" />
     <uses-permission android:name="pleos.car.permission.CAR_INFO" />
     <uses-permission android:name="pleos.car.permission.CAR_ENERGY" />
+
+    <!-- CarUxRestrictionsManager. 자동차 기기가 아니면 없어도 설치되도록 required=false. -->
+    <application>
+        <uses-library android:name="android.car" android:required="false" />
+    </application>
 </manifest>
