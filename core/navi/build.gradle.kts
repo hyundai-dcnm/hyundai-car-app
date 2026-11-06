@@ -20,6 +20,7 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.pleos.navihelper)
     implementation(libs.pleos.fusedlocation)
-    implementation(libs.kotlinx.serialization.json)    testImplementation(libs.junit)
+    implementation(libs.kotlinx.serialization.json)
+    testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
 }

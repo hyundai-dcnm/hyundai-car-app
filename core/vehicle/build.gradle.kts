@@ -6,6 +6,7 @@ plugins {
 android {
     namespace = "com.dcnm.carapp.core.vehicle"
     compileSdk = 35
+    useLibrary("android.car")
     defaultConfig { minSdk = 28 }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

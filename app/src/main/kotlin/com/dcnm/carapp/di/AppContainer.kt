@@ -1,6 +1,7 @@
 package com.dcnm.carapp.di
 
 import android.content.Context
+import com.dcnm.carapp.capture.SymptomCapture
 import com.dcnm.carapp.core.data.db.AppDatabase
 import com.dcnm.carapp.core.data.repository.MaintenanceRepository
 import com.dcnm.carapp.core.data.repository.SymptomRepository
@@ -8,6 +9,7 @@ import com.dcnm.carapp.core.navi.BundledShopProvider
 import com.dcnm.carapp.core.navi.NaviRepository
 import com.dcnm.carapp.core.navi.PleosNaviRepository
 import com.dcnm.carapp.core.vehicle.VehicleRepository
+import com.dcnm.carapp.core.vehicle.driving.UxRestrictionsMonitor
 import com.dcnm.carapp.core.vehicle.source.AaosCarPropertySource
 import com.dcnm.carapp.core.vehicle.source.CompositeVehicleSignalSource
 import com.dcnm.carapp.core.vehicle.source.PleosVehicleSignalSource
@@ -40,7 +42,17 @@ class AppContainer(context: Context) {
         VehicleRepository(CompositeVehicleSignalSource(sources), appScope)
     }
 
+    /** 주행/정차 1순위 입력. 콜백은 [VehicleRepository.onUxRestrictionsChanged]로 넘긴다. */
+    val uxRestrictionsMonitor: UxRestrictionsMonitor by lazy {
+        UxRestrictionsMonitor(appContext) { restricted -> vehicleRepository.onUxRestrictionsChanged(restricted) }
+    }
+
     val voiceManager: VoiceManager by lazy { PleosVoiceManager(appContext) }
 
     val naviRepository: NaviRepository by lazy { PleosNaviRepository(appContext, BundledShopProvider(appContext)) }
+
+    /** 기록 루프. 주행 화면과 백그라운드 서비스가 같은 인스턴스를 쓴다. */
+    val symptomCapture: SymptomCapture by lazy {
+        SymptomCapture(vehicleRepository, voiceManager, symptomRepository, naviRepository, appScope)
+    }
 }
