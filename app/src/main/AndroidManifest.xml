@@ -3,6 +3,10 @@
 
     <!-- 차량 권한은 각 core 모듈 매니페스트에서 선언되어 머지된다. -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- 앱 화면이 뒤로 가도 음성 기록을 받는 서비스 + 기록 완료 알림 -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:name=".CarApp"
@@ -28,5 +32,21 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!--
+          음성 호출 진입점. 음성 비서·스티어링 버튼 연동이 확정되면 그쪽에서 ACTION_RECORD_SYMPTOM을 보낸다.
+          지금은 시연 스크립트(scripts/record-voice.sh)가 adb로 보낸다.
+        -->
+        <service
+            android:name=".capture.CaptureService"
+            android:exported="true"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Records a driver's spoken symptom with the preceding 30 s of vehicle signals while the native navigation screen stays in front." />
+            <intent-filter>
+                <action android:name="com.dcnm.carapp.action.RECORD_SYMPTOM" />
+            </intent-filter>
+        </service>
     </application>
 </manifest>

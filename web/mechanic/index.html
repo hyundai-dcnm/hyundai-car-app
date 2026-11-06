@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>정비 참고 리포트</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+/*
+  정비사 휴대폰용 정비 참고 리포트. 차량 앱(U1)과 같은 팔레트.
+  paper  #FFFFFF  리포트 면        ground #F7F8FA  바탕
+  ink    #131417  본문             ink2   #55575E  보조
+  rule   #E0E1E6  칸 구분          signal #0064FF  차속 선
+  voice  #FFF1DA / #8A4B00  녹음 내용과 '녹음 시점' 표시에만
+  판정색(빨강·초록)은 쓰지 않는다. 앱은 고장을 판정하지 않는다.
+  줄간격·글자간격·줄넘김은 순정 차량 화면 실측과 같다: 글꼴 기본 줄높이, 자간 0, 글자 단위 줄넘김.
+*/
+:root{
+  --paper:#FFFFFF; --ground:#F7F8FA; --ink:#131417; --ink2:#55575E; --ink3:#8B8E96;
+  --rule:#E0E1E6; --field:#C9CBD1; --signal:#0064FF; --voice:#FFF1DA; --voice-ink:#8A4B00;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--ground); color:var(--ink);
+  font-family:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,system-ui,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;
+  font-size:16px; line-height:normal; letter-spacing:0; font-feature-settings:"tnum" 1; word-break:normal; overflow-wrap:anywhere;
+}
+.sheet{max-width:640px; margin:0 auto; background:var(--paper); min-height:100vh; padding:0 0 env(safe-area-inset-bottom)}
+section{padding:28px 22px; border-top:1px solid var(--rule)}
+h2{font-size:17px; font-weight:700; margin:0 0 8px}
+.sub{font-size:14px; color:var(--ink2); margin:0 0 18px}
+p{margin:0}
+
+/* 머리: 리포트 이름 + 고지 */
+.head{padding:22px 22px 18px; display:flex; align-items:baseline; gap:12px; flex-wrap:wrap}
+.head h1{font-size:15px; font-weight:700; margin:0}
+.head .rid{font-size:13px; color:var(--ink3)}
+.notice{flex-basis:100%; font-size:13px; color:var(--ink2)}
+
+/* 고객 호소: 녹음 원문 */
+.concern{padding-top:8px; border-top:0}
+.when{font-size:15px; color:var(--ink2); margin-bottom:14px; display:flex; flex-wrap:wrap; column-gap:14px}
+.quote{
+  background:var(--voice); border-radius:18px; padding:20px 20px 18px; margin:0;
+}
+.quote .who{font-size:13px; font-weight:600; color:var(--voice-ink); margin-bottom:6px}
+.quote q{display:block; font-size:24px; font-weight:650; quotes:"“" "”"}
+.quote q.empty{font-size:18px; font-weight:500; color:var(--ink2)}
+.facts{display:grid; grid-template-columns:1.25fr 1fr 1fr; margin:18px 0 0; border:1px solid var(--rule); border-radius:14px}
+.facts div{padding:12px 12px}
+.facts div+div{border-left:1px solid var(--rule)}
+.facts dt{font-size:12px; color:var(--ink2)}
+.facts dd{margin:2px 0 0; font-size:17px; font-weight:650; white-space:nowrap}
+.facts dd small, .readout dd small{font-size:13px; font-weight:500; color:var(--ink2)}
+
+/* 발생 당시 차량 기록: 40초 신호 띠 */
+.strip{display:block; width:100%; height:auto; touch-action:pan-y; cursor:crosshair; border-radius:8px}
+.strip:focus-visible{outline:2px solid var(--signal); outline-offset:4px}
+.strip text{font-family:inherit; fill:var(--ink2); font-size:13px}
+.strip .lane-name{fill:var(--ink); font-weight:650; font-size:14px}
+.strip .moment text{fill:var(--voice-ink); font-weight:700}
+.readout{display:grid; grid-template-columns:auto 1fr 1fr 1fr; gap:0; margin-top:14px; border:1px solid var(--rule); border-radius:14px; align-items:stretch}
+.readout > *{padding:10px 10px}
+.readout .at{font-size:14px; font-weight:700; display:flex; align-items:center; min-width:84px; border-right:1px solid var(--rule)}
+.readout .at.now{background:var(--voice); color:var(--voice-ink); border-radius:13px 0 0 13px}
+.readout dl{margin:0}
+.readout dt{font-size:12px; color:var(--ink2)}
+.readout dd{margin:0; font-size:17px; font-weight:650; white-space:nowrap}
+.readout dd.none{font-size:14px; font-weight:500; color:var(--ink3)}
+.hint{font-size:13px; color:var(--ink3); margin-top:8px}
+ul.obs{margin:20px 0 0; padding:0; list-style:none}
+ul.obs li{padding:12px 0; border-top:1px solid var(--rule)}
+ul.obs li:last-child{border-bottom:1px solid var(--rule)}
+.flag{margin-top:14px; font-size:14px; border:1.5px solid var(--ink); border-radius:10px; padding:10px 12px}
+.source{margin-top:12px; font-size:13px; color:var(--ink2)}
+
+/* 이 기록에 없는 값 */
+table.missing{width:100%; border-collapse:collapse; font-size:15px}
+table.missing td{padding:12px 0; border-top:1px solid var(--rule); vertical-align:top}
+table.missing tr:last-child td{border-bottom:1px solid var(--rule)}
+table.missing td:last-child{color:var(--ink2); text-align:right; padding-left:12px}
+
+/* 관련 이력 */
+dl.history{margin:0; display:grid; grid-template-columns:auto 1fr; column-gap:18px; row-gap:16px}
+dl.history dt{color:var(--ink2); font-size:15px}
+dl.history dd{margin:0; font-weight:600}
+
+/* 점검 결과: 정비사가 적는 빈 서식 */
+.form{background:var(--ground)}
+.form .sub{margin-bottom:20px}
+fieldset{border:0; margin:0 0 20px; padding:0}
+legend, .flabel{font-size:14px; font-weight:700; margin-bottom:8px; padding:0; display:block}
+.choices{display:flex; flex-wrap:wrap; gap:8px}
+.choices label{position:relative}
+.choices input{position:absolute; opacity:0; inset:0; margin:0}
+.choices span{display:inline-flex; align-items:center; min-height:44px; padding:0 16px; border:1.5px solid var(--field); border-radius:12px; background:var(--paper); font-size:15px}
+.choices input:checked + span{background:var(--ink); border-color:var(--ink); color:#fff; font-weight:650}
+.choices input:focus-visible + span{outline:2px solid var(--signal); outline-offset:2px}
+textarea{width:100%; min-height:76px; resize:vertical; font:inherit; font-size:16px; padding:12px; border:1.5px solid var(--field); border-radius:12px; background:var(--paper) repeating-linear-gradient(transparent 0 35px, var(--rule) 35px 36px); background-position:0 11px; line-height:36px; color:var(--ink)}
+textarea:focus-visible{outline:2px solid var(--signal); outline-offset:1px; border-color:var(--ink)}
+.actions{display:flex; gap:10px; margin-top:6px}
+button{font:inherit; font-size:16px; font-weight:650; min-height:52px; padding:0 22px; border-radius:14px; border:0; background:var(--ink); color:#fff; cursor:pointer}
+button:focus-visible{outline:2px solid var(--signal); outline-offset:2px}
+
+footer{padding:24px 22px 40px; font-size:13px; color:var(--ink2); border-top:1px solid var(--rule)}
+footer p+p{margin-top:10px}
+
+/* 빈 상태, 오류 */
+.state{padding:72px 22px; text-align:left}
+.state h1{font-size:22px; margin:0 0 10px}
+.state p{color:var(--ink2); margin-bottom:20px}
+.state a{color:var(--signal); font-weight:650}
+
+@media (min-width:700px){
+  body{padding:32px 0}
+  .sheet{min-height:0; border-radius:24px; box-shadow:0 1px 0 var(--rule), 0 0 0 1px var(--rule)}
+}
+@media print{
+  body{background:#fff; padding:0}
+  .sheet{max-width:none; box-shadow:none}
+  .actions, .hint{display:none}
+  .form{background:#fff}
+  section{break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<main class="sheet" id="app" aria-live="polite">
+  <div class="state"><h1>리포트를 여는 중</h1></div>
+</main>
+
+<script>
+(() => {
+'use strict';
+
+// 차량 앱 MechanicLink.kt와 같은 형식. 키를 바꾸면 양쪽 v를 함께 올린다.
+const VERSION = 1;
+const LANES = [
+  { key: 'speed',    name: '차속',     unit: 'km/h', kind: 'line', floor: 60 },
+  { key: 'brake',    name: '브레이크', unit: '%',    kind: 'step', floor: 100 },
+  { key: 'steering', name: '조향각',   unit: '°',    kind: 'dash', floor: 30, signed: true },
+];
+// Pleos 차량 앱이 받을 수 없는 값. 정비소 장비로 확인해야 한다.
+const MISSING = [
+  ['엔진, 모터 회전수 (RPM)', '진단기 데이터'],
+  ['가속 페달 개도', '진단기 데이터'],
+  ['냉각수 온도', '진단기 데이터'],
+  ['고장 코드 (DTC)', 'OBD 스캔 필요'],
+  ['ABS, ESC 작동 기록', '진단기 데이터'],
+];
+// 차량 앱 시연 기록과 같은 예시 (합성 신호).
+const EXAMPLE = 'lVJPaxNBFP8qwwOhwqTuzE7SdW9CPQh6Uk-hh0kyjUuyWd2seiiBFlLJYQtKaU5JTQ_SCj0skkCKNz-Kx53Jd_DNhkpXzcGdH8vw-P15u-8dwDvwGYWgBT54jarkbKcJFGSC5Z0aF4y53MGHQhIHbSSZyyMz-0TyZaYvpsjsy0Krs6_5ckT0MtWzkZnOV0fXRGefzXRI9FlK9MnEfL9ZjUdmPEdRM8JYt0YhVm_AF-i-H0ch-BUXr13ZU33wD6D_Win0rvfedrv0j5fr3eJhCehVAiuDl2DlgmImr1HOKfM2YY9CI5YdtaEZ5z8Opnmc1oTtjlX_RcGwfqJUHPTaG_IqbgFRYH1nqGQUP4mK4rh4Z7Zc4Xe4azq_pbt_0fcGFNpKxjjRXZxT1IpwPB5nLs4fV6KOvUUNHE4d1gtA8sV1ng2Jya7MhxPCvJ-Hp4KTTvjgFcpL22DOj_XsCzGLiU4PicfvkS19fGOmKXHNfETMbHgfJeYiW41_s8SPDOzviJs28vmTZy-fPnrxeLeoyRDHwSmEMugldl2CRIV2E--GrtIrfTrZMmfn1vx9FHeQkS8-mm92DVsyQQ_gDq9ue9sMKx10EMzhzmDwCw';
+
+const app = document.getElementById('app');
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+async function decode(encoded) {
+  const bin = Uint8Array.from(atob(encoded.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
+  const stream = new Blob([bin]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+  return JSON.parse(await new Response(stream).text());
+}
+
+function showState(title, body, withExample) {
+  app.innerHTML = `<div class="state"><h1>${esc(title)}</h1><p>${esc(body)}</p>${
+    withExample ? '<a href="#example">예시 리포트 보기</a>' : ''}</div>`;
+}
+
+function relative(s) {
+  if (s === 0) return '녹음 시점';
+  return s < 0 ? `녹음 ${-s}초 전` : `녹음 ${s}초 후`;
+}
+
+function whenLine(ms) {
+  const d = new Date(ms);
+  const day = '일월화수목금토'[d.getDay()];
+  const hh = String(d.getHours()).padStart(2, '0'), mm = String(d.getMinutes()).padStart(2, '0');
+  return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 (${day}) ${hh}:${mm}`;
+}
+
+const fmtKm = n => n.toLocaleString('ko-KR') + ' km';
+
+// ---------- 40초 신호 띠 ----------
+// 그리는 폭 = 실제 화면 폭(1단위 = 1px). 휴대폰에서 글자가 줄어들지 않게 한다.
+let W = 600;
+const PAD_L = 62, PAD_R = 12, TOP = 30, LANE_H = 64, LANE_GAP = 24;
+const H = TOP + LANES.length * (LANE_H + LANE_GAP) + 10;
+
+function strip(r) {
+  const from = r.from, n = LANES.length ? r.lanes[LANES[0].key].length : 0, to = from + n - 1;
+  const x = s => PAD_L + (s - from) / (to - from) * (W - PAD_L - PAD_R);
+  const parts = [];
+  parts.push(`<defs><pattern id="gap" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+    <line x1="0" y1="0" x2="0" y2="6" stroke="#E0E1E6" stroke-width="2"/></pattern></defs>`);
+
+  // 시간 눈금
+  for (let s = from; s <= to; s++) {
+    if (s % 10 !== 0 || s === 0) continue;
+    parts.push(`<line x1="${x(s)}" x2="${x(s)}" y1="${TOP - 4}" y2="${H - 10}" stroke="#EEEFF2"/>`);
+    parts.push(`<text x="${x(s)}" y="${TOP - 10}" text-anchor="${s === to ? 'end' : 'middle'}">${s > 0 ? '+' : ''}${s}초</text>`);
+  }
+
+  LANES.forEach((lane, i) => {
+    const y0 = TOP + i * (LANE_H + LANE_GAP);
+    const vals = r.lanes[lane.key] || [];
+    const present = vals.filter(v => v !== null);
+    const span = Math.max(lane.floor, ...present.map(v => Math.abs(v)));
+    const y = v => lane.signed ? y0 + LANE_H / 2 - (v / span) * (LANE_H / 2) : y0 + LANE_H - (v / span) * LANE_H;
+
+    parts.push(`<text class="lane-name" x="0" y="${y0 + 16}">${lane.name}</text>`);
+    parts.push(`<text x="0" y="${y0 + 34}">${lane.unit}</text>`);
+    parts.push(`<line x1="${PAD_L}" x2="${W - PAD_R}" y1="${lane.signed ? y0 + LANE_H / 2 : y0 + LANE_H}" y2="${lane.signed ? y0 + LANE_H / 2 : y0 + LANE_H}" stroke="#C9CBD1"/>`);
+
+    // 신호 공백: 빗금 + 글자. 보간하지 않는다.
+    let runStart = null;
+    vals.concat([0]).forEach((v, k) => {
+      if ((v === null) && runStart === null) runStart = k;
+      if (v !== null && runStart !== null) {
+        const a = x(from + runStart) - (runStart === 0 ? 0 : 4), b = x(from + k - 1) + 4;
+        parts.push(`<rect x="${a}" y="${y0}" width="${b - a}" height="${LANE_H}" fill="url(#gap)"/>`);
+        if (b - a > 54) parts.push(`<text x="${(a + b) / 2}" y="${y0 + LANE_H / 2 + 4}" text-anchor="middle">신호 없음</text>`);
+        runStart = null;
+      }
+    });
+
+    // 선: 공백에서 끊는다.
+    let d = '', prev = null;
+    vals.forEach((v, k) => {
+      if (v === null) { prev = null; return; }
+      const px = x(from + k), py = y(v);
+      if (prev === null) d += `M${px},${py}`;
+      else if (lane.kind === 'step') d += `H${px}V${py}`;
+      else d += `L${px},${py}`;
+      prev = v;
+    });
+    const stroke = lane.key === 'speed' ? 'var(--signal)' : 'var(--ink)';
+    parts.push(`<path d="${d}" fill="none" stroke="${stroke}" stroke-width="2.5" stroke-linejoin="round" ${lane.kind === 'dash' ? 'stroke-dasharray="6 5"' : ''}/>`);
+
+    // 최댓값 표시 (조향은 절댓값)
+    if (present.length) {
+      let best = -1;
+      vals.forEach((v, k) => { if (v !== null && (best < 0 || Math.abs(v) > Math.abs(vals[best]))) best = k; });
+      if (Math.abs(vals[best]) > 0) {
+        const px = x(from + best), py = y(vals[best]);
+        parts.push(`<circle cx="${px}" cy="${py}" r="4" fill="var(--paper)" stroke="${stroke}" stroke-width="2"/>`);
+        const label = `최대 ${vals[best]}${lane.unit === '°' ? '°' : ' ' + lane.unit}`;
+        const anchor = px > W - 110 ? 'end' : 'start';
+        parts.push(`<text x="${px + (anchor === 'end' ? -8 : 8)}" y="${Math.max(y0 + 12, py - 8)}" text-anchor="${anchor}">${label}</text>`);
+      }
+    }
+  });
+
+  // 말한 순간 (0초)
+  parts.push(`<g class="moment"><line x1="${x(0)}" x2="${x(0)}" y1="${TOP - 4}" y2="${H - 10}" stroke="var(--voice-ink)" stroke-width="2"/>
+    <text x="${x(0)}" y="${TOP - 10}" text-anchor="middle">녹음 시점</text></g>`);
+  // 손가락으로 고른 시점
+  parts.push(`<line id="cursor" x1="0" x2="0" y1="${TOP - 4}" y2="${H - 10}" stroke="var(--ink)" stroke-width="1.5" stroke-dasharray="3 3" visibility="hidden"/>`);
+
+  return { svg: `<svg class="strip" viewBox="0 0 ${W} ${H}" tabindex="0" role="img"
+      aria-label="녹음 ${-from}초 전부터 ${to}초 후까지 차속, 브레이크, 조향각. 좌우 화살표로 시점 이동.">${parts.join('')}</svg>`,
+    from, to, x };
+}
+
+function bindScrub(r, geo) {
+  const svg = app.querySelector('.strip'), cursor = svg.querySelector('#cursor');
+  const out = app.querySelector('.readout');
+  let at = 0;
+  const show = s => {
+    at = Math.max(geo.from, Math.min(geo.to, s));
+    const i = at - geo.from;
+    cursor.setAttribute('x1', geo.x(at)); cursor.setAttribute('x2', geo.x(at));
+    cursor.setAttribute('visibility', at === 0 ? 'hidden' : 'visible');
+    out.innerHTML = `<div class="at${at === 0 ? ' now' : ''}">${relative(at)}</div>` + LANES.map(l => {
+      const v = (r.lanes[l.key] || [])[i];
+      return `<dl><dt>${l.name}</dt>${v === null || v === undefined
+        ? '<dd class="none">신호 없음</dd>' : `<dd>${v}<small>${l.unit === '°' ? '°' : ' ' + l.unit}</small></dd>`}</dl>`;
+    }).join('');
+  };
+  const fromEvent = e => {
+    const p = svg.createSVGPoint(); p.x = e.clientX; p.y = e.clientY;
+    const local = p.matrixTransform(svg.getScreenCTM().inverse());
+    show(Math.round(geo.from + (local.x - PAD_L) / (W - PAD_L - PAD_R) * (geo.to - geo.from)));
+  };
+  svg.addEventListener('pointerdown', e => { fromEvent(e); svg.setPointerCapture(e.pointerId); });
+  svg.addEventListener('pointermove', e => { if (e.buttons || e.pointerType === 'mouse') fromEvent(e); });
+  svg.addEventListener('keydown', e => {
+    if (e.key === 'ArrowLeft') { show(at - 1); e.preventDefault(); }
+    if (e.key === 'ArrowRight') { show(at + 1); e.preventDefault(); }
+    if (e.key === 'Home') { show(0); e.preventDefault(); }
+  });
+  show(0);
+}
+
+// ---------- 리포트 ----------
+function render(r) {
+  W = Math.max(300, Math.min(596, app.clientWidth - 44));
+  const geo = strip(r);
+  const simulated = (r.src || []).includes('SIMULATED');
+  const sourceNames = { PLEOS_SDK: 'Pleos 차량 SDK', AAOS_CAR_API: 'Android 차량 API', SIMULATED: '합성(시연용)' };
+  const tt = (r.tt || []).map(t => `<li>경고등 켜짐: ${esc(t.id)} (${relative(t.s)})</li>`).join('');
+
+  app.innerHTML = `
+  <header class="head">
+    <h1>정비 참고 리포트</h1><span class="rid">기록 ${esc(r.id)}</span>
+    <p class="notice">녹음 내용과 측정값을 구분한 참고 자료. 고장 판정 아님.</p>
+  </header>
+
+  <section class="concern" aria-labelledby="h-concern">
+    <h2 id="h-concern">고객 호소</h2>
+    <p class="when"><span>${whenLine(r.at)}</span><span>${esc(r.trig)}</span></p>
+    <figure class="quote">
+      <figcaption class="who">녹음 원문</figcaption>
+      ${r.said ? `<q>${esc(r.said)}</q>` : '<q class="empty">녹음 내용 인식 실패, 차량 신호만 저장</q>'}
+    </figure>
+    <dl class="facts">
+      <div><dt>적산거리</dt><dd>${r.odo != null ? `${r.odo.toLocaleString('ko-KR')}<small> km</small>` : '—'}</dd></div>
+      <div><dt>녹음 시점 기어</dt><dd>${r.gear ? esc(r.gear) : '—'}</dd></div>
+      <div><dt>같은 방식 기록</dt><dd>${r.same > 0 ? `${r.same}건 더` : '처음'}</dd></div>
+    </dl>
+  </section>
+
+  <section aria-labelledby="h-signal">
+    <h2 id="h-signal">발생 당시 차량 기록</h2>
+    <p class="sub">녹음 ${-geo.from}초 전부터 ${geo.to}초 후까지, 1초 간격. ${r.cov < r.req ? `요청 ${r.req}초 중 ${r.cov}초 확보.` : `${r.cov}초 확보.`}</p>
+    ${geo.svg}
+    <div class="readout"></div>
+    <p class="hint">그래프를 누르거나 밀면 해당 시점의 측정값 표시</p>
+    <ul class="obs">${(r.obs || []).map(o => `<li>${esc(o)}</li>`).join('')}${tt}</ul>
+    ${simulated ? '<p class="flag">시연용 합성 신호 포함. 실제 차량 측정값 아님.</p>' : ''}
+    <p class="source">출처: ${(r.src || []).map(s => sourceNames[s] || esc(s)).join(', ') || '없음'}. 빈 칸은 신호 없음이며 이상 없음과 다름.</p>
+  </section>
+
+  <section aria-labelledby="h-missing">
+    <h2 id="h-missing">이 기록에 없는 값</h2>
+    <p class="sub">차량 앱으로 수집 불가한 값. 정비소 장비로 확인 필요.</p>
+    <table class="missing"><tbody>${MISSING.map(([a, b]) => `<tr><td>${a}</td><td>${b}</td></tr>`).join('')}</tbody></table>
+  </section>
+
+  <section aria-labelledby="h-history">
+    <h2 id="h-history">관련 이력</h2>
+    <p class="sub">운전자가 입력한 기록. 정비 명세서와 대조 필요.</p>
+    <dl class="history">
+      <dt>최근 정비</dt><dd>${r.maint
+        ? `${esc(r.maint.item)} ${esc(r.maint.work)}<br><span style="font-weight:500;color:var(--ink2)">${esc(r.maint.date)}${r.maint.km != null ? ', ' + fmtKm(r.maint.km) : ''}</span>`
+        : '기록 없음'}</dd>
+      <dt>같은 방식 기록</dt><dd>${r.same > 0 ? `이 기록 말고 ${r.same}건` : '이 기록이 처음'}</dd>
+    </dl>
+  </section>
+
+  <section class="form" aria-labelledby="h-form">
+    <h2 id="h-form">점검 결과</h2>
+    <p class="sub">정비사 작성란. 원인은 비워 둔 상태로 전달됨. 입력 내용은 이 휴대폰에만 남으며 인쇄나 PDF 저장으로 전달 가능.</p>
+    <fieldset><legend>증상 재현</legend><div class="choices">
+      ${['재현됨', '재현 안 됨', '시승 안 함'].map(v => `<label><input type="radio" name="verify" value="${v}"><span>${v}</span></label>`).join('')}
+    </div></fieldset>
+    <fieldset><legend>재현 조건</legend><textarea name="condition" aria-label="재현 조건" placeholder="예: 40km/h 이하 약제동, 냉간"></textarea></fieldset>
+    <fieldset><legend>원인</legend><textarea name="cause" aria-label="원인"></textarea></fieldset>
+    <fieldset><legend>조치</legend><div class="choices">
+      ${['점검', '조정', '교환', '수리', '조치 안 함'].map(v => `<label><input type="checkbox" name="action" value="${v}"><span>${v}</span></label>`).join('')}
+    </div></fieldset>
+    <fieldset><legend>상태</legend><div class="choices">
+      ${['양호', '불량', '추후 점검 권장'].map(v => `<label><input type="radio" name="state" value="${v}"><span>${v}</span></label>`).join('')}
+    </div></fieldset>
+    <fieldset><legend>작업 내용과 교환 부품</legend><textarea name="work" aria-label="작업 내용과 교환 부품"></textarea></fieldset>
+    <div class="actions"><button type="button" id="print">인쇄 또는 PDF 저장</button></div>
+  </section>
+
+  <footer>
+    <p>QR 코드에 담긴 요약만 표시. 서버에 저장되지 않으며 원본 차량 신호는 차량 내부에만 보관.</p>
+    <p>이름, 연락처, 위치 정보 미포함.</p>
+  </footer>`;
+
+  bindScrub(r, geo);
+  bindForm(r.id);
+}
+
+// 정비사가 적은 칸은 이 기기에만 보관한다 (같은 QR을 다시 열어도 유지).
+function bindForm(id) {
+  const key = 'mechanic-form:' + id;
+  const form = app.querySelector('.form');
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(key) || '{}'); } catch (_) {}
+  form.querySelectorAll('input, textarea').forEach(el => {
+    const v = saved[el.name];
+    if (el.type === 'radio') el.checked = v === el.value;
+    else if (el.type === 'checkbox') el.checked = Array.isArray(v) && v.includes(el.value);
+    else if (typeof v === 'string') el.value = v;
+  });
+  form.addEventListener('input', () => {
+    const data = {};
+    form.querySelectorAll('input, textarea').forEach(el => {
+      if (el.type === 'radio') { if (el.checked) data[el.name] = el.value; }
+      else if (el.type === 'checkbox') { if (el.checked) (data[el.name] = data[el.name] || []).push(el.value); }
+      else data[el.name] = el.value;
+    });
+    try { localStorage.setItem(key, JSON.stringify(data)); } catch (_) {}
+  });
+  form.querySelector('#print').addEventListener('click', () => window.print());
+}
+
+async function main() {
+  const hash = location.hash.slice(1);
+  const encoded = hash === 'example' ? EXAMPLE : new URLSearchParams(hash).get('r');
+  if (!encoded) return showState('QR 코드 재촬영 필요', '차량 화면의 정비사용 QR을 휴대폰 카메라로 촬영하면 리포트 열림.', true);
+  if (typeof DecompressionStream === 'undefined') {
+    return showState('이 브라우저에서 열 수 없음', '최신 Chrome, Safari(iOS 16.4 이상), 삼성 인터넷에서 다시 열기.', false);
+  }
+  let r;
+  try { r = await decode(encoded); }
+  catch (_) { return showState('리포트 읽기 실패', 'QR 일부만 촬영됐을 가능성. 차량 화면 QR 재촬영 필요.', false); }
+  if (r.v !== VERSION) return showState('차량 앱 버전 불일치', `페이지 형식 ${VERSION}, 리포트 형식 ${r.v}. 차량 앱 업데이트 필요.`, false);
+  document.title = `정비 참고 리포트 ${whenLine(r.at)}`;
+  render(r);
+}
+
+window.addEventListener('hashchange', main);
+let lastWidth = innerWidth;
+window.addEventListener('resize', () => { if (Math.abs(innerWidth - lastWidth) > 40) { lastWidth = innerWidth; main(); } });
+main();
+})();
+</script>
+</body>
+</html>

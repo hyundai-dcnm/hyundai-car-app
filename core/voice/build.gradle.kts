@@ -19,6 +19,7 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.androidx.core.ktx)
     implementation(libs.pleos.tts)
-    implementation(libs.pleos.stt)    testImplementation(libs.junit)
+    implementation(libs.pleos.stt)
+    testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
 }
