@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- dangerous 권한이라 런타임 요청이 필요하다 (11/09 에뮬레이터 확인). -->
+    <uses-permission android:name="pleos.car.permission.FUSED_LOCATION" />
+</manifest>

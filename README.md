@@ -41,12 +41,60 @@
 | 2026-12-18 | 최종 발표 |
 | 2027-02 | 전시·시상 |
 
+## 저장소 구성
+
+```
+app/                차량 앱 진입점. 수동 DI(AppContainer), 화면 전환, 마이크 권한          ②
+core/model          순수 Kotlin. 여행방·멤버·위치·목적지 타입, 이벤트, 상태 갱신 규칙       공통
+core/network        REST(Retrofit) + WebSocket(OkHttp, 재연결), 가짜 서버(FakeTripRepository) ②
+core/call           음성 통화. CallClient 인터페이스 + LiveKit 구현                      ②
+core/location       차량 위치. Pleos FusedLocation(TODO) + 시뮬레이션                     ①
+core/navi           순정 내비 안내 요청. Pleos NaviHelper(TODO)                          ①
+feature/room        방 만들기·초대 코드로 참여 화면                                       ②
+feature/trip        여행방 화면: 일행, 목적지 제안·수락, 위치 공유, 통화                    ②
+feature/map         일행 지도(TripMap). 지금은 좌표만 찍는 자리표시                         ①
+server/             Spring Boot. 여행방·초대 코드·이벤트 중계·통화 토큰. 지금은 메모리 저장   ④
+web/                React + Vite. 여행 앨범                                              ③
+contract/api.md     앱·서버·웹이 맞춰야 하는 REST·WebSocket 형식
+```
+
+의존 방향: `app → feature/* → core/* → core/model`. 각자 맡은 곳의 `TODO(①)` 같은 표시부터 채우면 된다.
+
 ## 개발 환경
 
+- JDK 17 (Android Studio > Settings > Build Tools > Gradle > Gradle JDK 를 17로)
+- Android: AGP 8.8, Kotlin 2.0, compileSdk 35, minSdk 28, Jetpack Compose
+- 서버: Spring Boot 4.1, Java 17. 웹: Node 24, React 19, Vite
 - Pleos Connect SDK (Maven `https://nexus-playground.pleos.ai/repository/maven-releases/`)
-- Pleos Connect Emulator 2.1.0 (API 34). Cold boot 필수, AVD RAM 4GB
+  - Vehicle 2.3.2, NaviHelper 3.0.5, TextToSpeech 3.3.1, SpeechToText 3.3.1, FusedLocation 1.1.3
+- Pleos Connect Emulator 2.1.0 (API 34). AVD는 Automotive > Pleos Connect v2.1.0
+  - **Cold boot 필수** (Quick boot면 VHAL을 못 씀), RAM 4GB
   - Mac(arm64) 시스템 이미지: `https://nexus-playground.pleos.ai/repository/raw-releases/connect-avd/2.x/crp-arm64-sys-img.xml`
   - Windows/Linux: `https://nexus-playground.pleos.ai/repository/raw-releases/connect-avd/2.x/crp-sys-img.xml`
+  - Android Studio > Settings > SDK Update Sites 에 위 주소 추가 → SDK Platforms 에서 API 34 Pleos 이미지 설치
+  - 통화 테스트: Extended Controls > Microphone 에서 호스트 마이크 입력 켜기
+
+## 실행
+
+```bash
+# 차량 앱 (서버 없이 가짜 일행으로)
+./gradlew :app:installDebug
+
+# 차량 앱 → 노트북 서버 (에뮬레이터에서 노트북은 10.0.2.2)
+./gradlew :app:installDebug -Pdonghaeng.apiBaseUrl=http://10.0.2.2:8080/
+
+# 서버 (기본 H2 메모리. 통화 토큰은 LiveKit 환경 변수가 있어야 발급)
+cd server
+LIVEKIT_URL=wss://<프로젝트>.livekit.cloud LIVEKIT_API_KEY=... LIVEKIT_API_SECRET=... ./gradlew bootRun
+docker compose up -d && ./gradlew bootRun --args='--spring.profiles.active=postgres'   # PostgreSQL
+
+# 웹 (/api, /ws 는 localhost:8080 으로 프록시)
+cd web && npm install && npm run dev
+
+# 테스트
+./gradlew :core:model:test
+cd server && ./gradlew test
+```
 
 ## 문서
 
