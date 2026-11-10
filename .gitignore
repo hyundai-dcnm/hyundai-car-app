@@ -1,0 +1,29 @@
+# macOS
+.DS_Store
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Android / Gradle
+*.apk
+!apk/*_release.apk
+*.aab
+build/
+.gradle/
+local.properties
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Keys / secrets
+*.jks
+*.keystore
+google-services.json
+.env
+
+# 로컬 전용 분석 자료
+reports/
+research_notes/
+docs/
