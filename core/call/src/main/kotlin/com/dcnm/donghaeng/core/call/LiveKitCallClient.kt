@@ -23,6 +23,10 @@ class LiveKitCallClient(
     private var room: Room? = null
     private var eventsJob: Job? = null
 
+    // LiveKit 의 isMicrophoneEnabled 는 StateFlow 로 늦게 갱신돼서, 켠 직후 읽으면 이전 값이 나온다.
+    // 그래서 마이크 상태는 우리가 요청해서 성공한 값을 직접 들고 있는다.
+    private var micEnabled = false
+
     override suspend fun connect(credentials: CallCredentials) {
         disconnect()
         _state.value = CallState.Connecting
@@ -45,7 +49,7 @@ class LiveKitCallClient(
         }
         try {
             room.connect(credentials.url, credentials.token)
-            room.localParticipant.setMicrophoneEnabled(true)
+            micEnabled = room.localParticipant.setMicrophoneEnabled(true)
             publish(room)
         } catch (e: Exception) {
             _state.value = CallState.Failed(e.message ?: "연결 실패")
@@ -54,7 +58,7 @@ class LiveKitCallClient(
 
     override suspend fun setMicEnabled(enabled: Boolean) {
         val room = room ?: return
-        room.localParticipant.setMicrophoneEnabled(enabled)
+        if (room.localParticipant.setMicrophoneEnabled(enabled)) micEnabled = enabled
         publish(room)
     }
 
@@ -64,13 +68,14 @@ class LiveKitCallClient(
         room?.disconnect()
         room?.release()
         room = null
+        micEnabled = false
         _state.value = CallState.Idle
     }
 
     private fun publish(room: Room) {
         val speaking = room.activeSpeakers.mapNotNull { it.identity?.value }.toSet()
         _state.value = CallState.Connected(
-            micEnabled = room.localParticipant.isMicrophoneEnabled,
+            micEnabled = micEnabled,
             participants = room.remoteParticipants.values.map {
                 val id = it.identity?.value.orEmpty()
                 CallParticipant(id, it.name ?: id, id in speaking)
