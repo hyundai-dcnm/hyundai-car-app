@@ -35,15 +35,15 @@ class MainActivity : ComponentActivity() {
                         hasMic = it
                     }
                     // 방에 들어가 있으면 여행방 화면, 아니면 방 만들기·참여 화면.
-                    val trip by container.trips.state.collectAsStateWithLifecycle()
+                    val trip by container.trips.trip.collectAsStateWithLifecycle()
                     if (trip == null) {
                         RoomScreen(viewModel(factory = viewModelFactory { initializer { RoomViewModel(container.trips) } }))
                     } else {
                         TripScreen(
                             viewModel = viewModel(
-                                key = trip!!.trip.id,
+                                key = trip!!.id,
                                 factory = viewModelFactory {
-                                    initializer { TripViewModel(container.trips, container.call, container.location, container.navi) }
+                                    initializer { TripViewModel(container.trips, container.call) }
                                 },
                             ),
                             hasMicPermission = hasMic,

@@ -16,20 +16,20 @@ android {
         versionName = "0.1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // 서버 주소. 비우면 가짜 서버(FakeTripRepository)로 돈다.
-        // 에뮬레이터에서 노트북 서버: -Pdonghaeng.apiBaseUrl=http://10.0.2.2:8080/
-        val apiBaseUrl = providers.gradleProperty("donghaeng.apiBaseUrl").getOrElse("")
-        buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
+        // 서버 없이 통화를 시험할 때 쓰는 LiveKit 접속 정보. ~/.gradle/gradle.properties 나 -P 로 넣는다.
+        // 토큰은 `lk token create --join --room test --identity <이름>` 으로 만든다. 저장소에 올리지 않는다.
+        val livekitUrl = providers.gradleProperty("donghaeng.livekitUrl").getOrElse("")
+        val livekitToken = providers.gradleProperty("donghaeng.livekitToken").getOrElse("")
+        buildConfigField("String", "DEV_LIVEKIT_URL", "\"$livekitUrl\"")
+        buildConfigField("String", "DEV_LIVEKIT_TOKEN", "\"$livekitToken\"")
     }
 
     buildTypes {
         debug {
             applicationIdSuffix = ".debug"
-            buildConfigField("boolean", "SIMULATE_LOCATION", "true")
         }
         release {
             isMinifyEnabled = false
-            buildConfigField("boolean", "SIMULATE_LOCATION", "false")
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
@@ -48,10 +48,8 @@ android {
 
 dependencies {
     implementation(project(":core:model"))
-    implementation(project(":core:network"))
+    implementation(project(":core:trip"))
     implementation(project(":core:call"))
-    implementation(project(":core:location"))
-    implementation(project(":core:navi"))
     implementation(project(":feature:room"))
     implementation(project(":feature:trip"))
 

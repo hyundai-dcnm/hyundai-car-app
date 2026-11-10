@@ -28,10 +28,7 @@ rootProject.name = "donghaeng"
 
 include(":app")
 include(":core:model")
-include(":core:network")
+include(":core:trip")
 include(":core:call")
-include(":core:location")
-include(":core:navi")
 include(":feature:room")
 include(":feature:trip")
-include(":feature:map")

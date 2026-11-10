@@ -27,9 +27,3 @@ google-services.json
 reports/
 research_notes/
 docs/
-
-# web / server
-node_modules/
-dist/
-server/.gradle/
-server/build/

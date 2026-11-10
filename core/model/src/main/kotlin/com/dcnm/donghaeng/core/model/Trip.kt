@@ -1,14 +1,13 @@
 package com.dcnm.donghaeng.core.model
 
-import kotlinx.serialization.Serializable
+/*
+ * 화면이 쓰는 여행방 모델. 서버 응답 형식은 ④와 정한 뒤 core/trip 에서 이 모양으로 바꿔 넣는다.
+ */
 
-@Serializable
 data class LatLng(val lat: Double, val lng: Double)
 
-@Serializable
 data class Destination(val name: String, val location: LatLng)
 
-@Serializable
 data class Member(
     val id: String,
     val nickname: String,
@@ -18,7 +17,6 @@ data class Member(
 )
 
 /** 여행방. 같은 목적지로 가는 차량들의 묶음이다. */
-@Serializable
 data class Trip(
     val id: String,
     val name: String,
@@ -31,7 +29,6 @@ data class Trip(
     val proposal: DestinationProposal? = null,
 )
 
-@Serializable
 data class DestinationProposal(
     val id: String,
     val proposerId: String,
@@ -39,15 +36,5 @@ data class DestinationProposal(
     val acceptedBy: Set<String> = emptySet(),
 )
 
-@Serializable
-data class MemberLocation(
-    val memberId: String,
-    val location: LatLng,
-    val headingDeg: Float? = null,
-    val speedKph: Float? = null,
-    val updatedAtMillis: Long,
-)
-
-/** 서버가 발급하는 LiveKit 접속 정보. 토큰은 여행방 하나에만 유효하다. */
-@Serializable
+/** LiveKit 접속 정보. 토큰은 여행방 하나에만 유효하다. */
 data class CallCredentials(val url: String, val token: String)

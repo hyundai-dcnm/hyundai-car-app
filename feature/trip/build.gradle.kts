@@ -17,11 +17,8 @@ android {
 }
 
 dependencies {
-    implementation(project(":core:network"))
+    implementation(project(":core:trip"))
     implementation(project(":core:call"))
-    implementation(project(":core:location"))
-    implementation(project(":core:navi"))
-    implementation(project(":feature:map"))
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.tooling.preview)

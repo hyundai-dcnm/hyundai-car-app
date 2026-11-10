@@ -1,6 +1,8 @@
 package com.dcnm.donghaeng.feature.trip
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -22,14 +24,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dcnm.donghaeng.core.call.CallState
-import com.dcnm.donghaeng.core.network.ConnectionStatus
-import com.dcnm.donghaeng.feature.map.TripMap
+import com.dcnm.donghaeng.core.trip.ConnectionStatus
 
 /**
- * 여행방 화면. 왼쪽 지도, 오른쪽 일행·목적지·통화.
+ * 여행방 화면. 왼쪽은 지도 자리(①이 채움), 오른쪽은 일행·목적지·통화.
  * 주행 중에 누를 수 있는 것은 큰 버튼(수락, 음소거, 통화 참여·종료)뿐이다.
  */
 @Composable
@@ -41,7 +43,9 @@ fun TripScreen(
 ) {
     val ui by viewModel.ui.collectAsStateWithLifecycle()
     Row(modifier.fillMaxSize()) {
-        TripMap(ui.pins, ui.destination, Modifier.weight(1.4f).fillMaxHeight())
+        Box(Modifier.weight(1.4f).fillMaxHeight().background(Color(0xFFE9EDF2)), contentAlignment = Alignment.Center) {
+            Text("지도", style = MaterialTheme.typography.titleLarge)
+        }
         Column(
             Modifier.width(560.dp).fillMaxHeight().padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),

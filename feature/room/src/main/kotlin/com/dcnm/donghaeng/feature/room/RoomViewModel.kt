@@ -2,8 +2,8 @@ package com.dcnm.donghaeng.feature.room
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.dcnm.donghaeng.core.network.Profile
-import com.dcnm.donghaeng.core.network.TripRepository
+import com.dcnm.donghaeng.core.trip.Profile
+import com.dcnm.donghaeng.core.trip.TripRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update

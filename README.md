@@ -43,30 +43,26 @@
 
 ## 저장소 구성
 
+지금은 ② 차량 앱 화면·음성 통화 부분만 있다. 위치·지도·내비(①), 웹(③), 서버(④)는 각자 구조를 잡아 추가한다.
+
 ```
-app/                차량 앱 진입점. 수동 DI(AppContainer), 화면 전환, 마이크 권한          ②
-core/model          순수 Kotlin. 여행방·멤버·위치·목적지 타입, 이벤트, 상태 갱신 규칙       공통
-core/network        REST(Retrofit) + WebSocket(OkHttp, 재연결), 가짜 서버(FakeTripRepository) ②
-core/call           음성 통화. CallClient 인터페이스 + LiveKit 구현                      ②
-core/location       차량 위치. Pleos FusedLocation(TODO) + 시뮬레이션                     ①
-core/navi           순정 내비 안내 요청. Pleos NaviHelper(TODO)                          ①
-feature/room        방 만들기·초대 코드로 참여 화면                                       ②
-feature/trip        여행방 화면: 일행, 목적지 제안·수락, 위치 공유, 통화                    ②
-feature/map         일행 지도(TripMap). 지금은 좌표만 찍는 자리표시                         ①
-server/             Spring Boot. 여행방·초대 코드·이벤트 중계·통화 토큰. 지금은 메모리 저장   ④
-web/                React + Vite. 여행 앨범                                              ③
-contract/api.md     앱·서버·웹이 맞춰야 하는 REST·WebSocket 형식
+app/                차량 앱 진입점. 수동 DI(AppContainer), 화면 전환, 마이크 권한
+core/model          순수 Kotlin. 화면이 쓰는 여행방·멤버·목적지 타입
+core/trip           TripRepository 인터페이스 + 서버 없이 도는 FakeTripRepository
+core/call           음성 통화. CallClient 인터페이스 + LiveKit 구현
+feature/room        방 만들기·초대 코드로 참여 화면
+feature/trip        여행방 화면: 일행, 목적지 제안·수락, 위치 공유 토글, 통화. 왼쪽은 지도 자리
 ```
 
-의존 방향: `app → feature/* → core/* → core/model`. 각자 맡은 곳의 `TODO(①)` 같은 표시부터 채우면 된다.
+의존 방향: `app → feature/* → core/* → core/model`.
+서버 연동(`TripRepository` 서버 구현)은 ④와 API 형식을 정한 뒤 붙인다.
 
 ## 개발 환경
 
 - JDK 17 (Android Studio > Settings > Build Tools > Gradle > Gradle JDK 를 17로)
-- Android: AGP 8.8, Kotlin 2.0, compileSdk 35, minSdk 28, Jetpack Compose
-- 서버: Spring Boot 4.1, Java 17. 웹: Node 24, React 19, Vite
+- AGP 8.8, Kotlin 2.0, compileSdk 35, minSdk 28, Jetpack Compose
 - Pleos Connect SDK (Maven `https://nexus-playground.pleos.ai/repository/maven-releases/`)
-  - Vehicle 2.3.2, NaviHelper 3.0.5, TextToSpeech 3.3.1, SpeechToText 3.3.1, FusedLocation 1.1.3
+  - Vehicle 2.3.2, NaviHelper 3.0.5, TextToSpeech 3.3.1, SpeechToText 3.3.1, FusedLocation 1.1.3 (`gradle/libs.versions.toml`에 등록만 됨)
 - Pleos Connect Emulator 2.1.0 (API 34). AVD는 Automotive > Pleos Connect v2.1.0
   - **Cold boot 필수** (Quick boot면 VHAL을 못 씀), RAM 4GB
   - Mac(arm64) 시스템 이미지: `https://nexus-playground.pleos.ai/repository/raw-releases/connect-avd/2.x/crp-arm64-sys-img.xml`
@@ -77,24 +73,17 @@ contract/api.md     앱·서버·웹이 맞춰야 하는 REST·WebSocket 형식
 ## 실행
 
 ```bash
-# 차량 앱 (서버 없이 가짜 일행으로)
-./gradlew :app:installDebug
-
-# 차량 앱 → 노트북 서버 (에뮬레이터에서 노트북은 10.0.2.2)
-./gradlew :app:installDebug -Pdonghaeng.apiBaseUrl=http://10.0.2.2:8080/
-
-# 서버 (기본 H2 메모리. 통화 토큰은 LiveKit 환경 변수가 있어야 발급)
-cd server
-LIVEKIT_URL=wss://<프로젝트>.livekit.cloud LIVEKIT_API_KEY=... LIVEKIT_API_SECRET=... ./gradlew bootRun
-docker compose up -d && ./gradlew bootRun --args='--spring.profiles.active=postgres'   # PostgreSQL
-
-# 웹 (/api, /ws 는 localhost:8080 으로 프록시)
-cd web && npm install && npm run dev
-
-# 테스트
-./gradlew :core:model:test
-cd server && ./gradlew test
+./gradlew :app:installDebug       # 가짜 여행방(일행 두 대)으로 화면 확인
 ```
+
+서버 없이 통화를 시험하려면 LiveKit Cloud 프로젝트를 만들고 `~/.gradle/gradle.properties`에 넣는다 (저장소에 올리지 않음).
+
+```properties
+donghaeng.livekitUrl=wss://<프로젝트>.livekit.cloud
+donghaeng.livekitToken=<lk token create --join --room test --identity jamin 결과>
+```
+
+노트북 브라우저에서 같은 방(`test`)에 다른 identity로 들어가면 에뮬레이터와 서로 들린다.
 
 ## 문서
 

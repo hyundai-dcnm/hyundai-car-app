@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- 마이크·위치·내비 권한은 각 core 모듈 매니페스트에서 머지된다. -->
+    <!-- 마이크 권한은 core/call 매니페스트에서 머지된다. -->
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application
