@@ -3,6 +3,10 @@
 
     <!-- 마이크 권한은 core/call 매니페스트에서 머지된다. -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- 통화 중 앱이 뒤로 가도 마이크를 유지하는 포그라운드 서비스 -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:name=".DonghaengApp"
@@ -25,5 +29,10 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <service
+            android:name=".call.CallService"
+            android:exported="false"
+            android:foregroundServiceType="microphone" />
     </application>
 </manifest>

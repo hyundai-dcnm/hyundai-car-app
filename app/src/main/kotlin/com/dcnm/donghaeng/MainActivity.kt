@@ -2,6 +2,7 @@ package com.dcnm.donghaeng
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -31,9 +32,10 @@ class MainActivity : ComponentActivity() {
             MaterialTheme {
                 Surface {
                     var hasMic by remember { mutableStateOf(granted(Manifest.permission.RECORD_AUDIO)) }
-                    val micLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
-                        hasMic = it
-                    }
+                    // 통화 알림 권한은 함께 묻되 거절해도 통화는 된다 (알림만 안 보임).
+                    val micLauncher = rememberLauncherForActivityResult(
+                        ActivityResultContracts.RequestMultiplePermissions(),
+                    ) { hasMic = it[Manifest.permission.RECORD_AUDIO] == true }
                     // 방에 들어가 있으면 여행방 화면, 아니면 방 만들기·참여 화면.
                     val trip by container.trips.trip.collectAsStateWithLifecycle()
                     if (trip == null) {
@@ -47,13 +49,20 @@ class MainActivity : ComponentActivity() {
                                 },
                             ),
                             hasMicPermission = hasMic,
-                            onRequestMicPermission = { micLauncher.launch(Manifest.permission.RECORD_AUDIO) },
+                            onRequestMicPermission = { micLauncher.launch(callPermissions()) },
                         )
                     }
                 }
             }
         }
     }
+
+    private fun callPermissions(): Array<String> =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            arrayOf(Manifest.permission.RECORD_AUDIO, Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            arrayOf(Manifest.permission.RECORD_AUDIO)
+        }
 
     private fun granted(permission: String) =
         ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
