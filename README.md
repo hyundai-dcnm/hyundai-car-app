@@ -68,7 +68,7 @@ feature/trip        여행방 화면: 일행, 목적지 제안·수락, 위치 �
   - Mac(arm64) 시스템 이미지: `https://nexus-playground.pleos.ai/repository/raw-releases/connect-avd/2.x/crp-arm64-sys-img.xml`
   - Windows/Linux: `https://nexus-playground.pleos.ai/repository/raw-releases/connect-avd/2.x/crp-sys-img.xml`
   - Android Studio > Settings > SDK Update Sites 에 위 주소 추가 → SDK Platforms 에서 API 34 Pleos 이미지 설치
-  - 통화 테스트: Extended Controls > Microphone 에서 호스트 마이크 입력 켜기
+  - 통화 테스트는 아래 "통화 소리 테스트" 참고
 
 ## 실행
 
@@ -76,14 +76,38 @@ feature/trip        여행방 화면: 일행, 목적지 제안·수락, 위치 �
 ./gradlew :app:installDebug       # 가짜 여행방(일행 두 대)으로 화면 확인
 ```
 
-서버 없이 통화를 시험하려면 LiveKit Cloud 프로젝트를 만들고 `~/.gradle/gradle.properties`에 넣는다 (저장소에 올리지 않음).
+## 통화 소리 테스트 (서버 없이)
 
-```properties
-donghaeng.livekitUrl=wss://<프로젝트>.livekit.cloud
-donghaeng.livekitToken=<lk token create --join --room test --identity jamin 결과>
+LiveKit Cloud 프로젝트에 초대받은 뒤 진행한다.
+
+1. 토큰 만들기. 기본 유효시간이 5분이라 `--valid-for`를 꼭 붙인다.
+   ```bash
+   brew install livekit-cli
+   lk cloud auth      # 별도 터미널 앱에서 직접 실행 (브라우저 승인이 필요해서)
+   lk token create --join --room test --identity <내이름>-car --valid-for 24h   # 에뮬레이터용
+   lk token create --join --room test --identity browser --valid-for 24h        # 브라우저용
+   ```
+2. 에뮬레이터용 토큰을 `~/.gradle/gradle.properties`에 넣고 `./gradlew :app:installDebug` (저장소에 올리지 않음).
+   ```properties
+   donghaeng.livekitUrl=wss://dcnm-hyundai-donghaeng-oirv3cmd.livekit.cloud
+   donghaeng.livekitToken=<에뮬레이터용 토큰>
+   ```
+3. 에뮬레이터는 **Android Studio Device Manager에서** 켠다. 터미널에서 직접 띄우면 맥 마이크 권한을 못 받아 무음이 된다.
+4. 에뮬레이터 툴바 ⋮ > Extended Controls > Microphone > **Virtual microphone uses host audio input** 켜기.
+   에어팟 등으로 맥 입력 장치가 바뀌었으면 이 스위치를 껐다 켜야 새 장치를 잡는다.
+5. 앱에서 방 만들기 → 통화 참여. 브라우저는 https://meet.livekit.io 의 Custom 탭에 URL과 브라우저용 토큰을 넣고 입장.
+6. 둘 다 같은 맥이라 소리가 같은 이어폰으로 나온다. 한 방향씩 확인할 때는 반대쪽을 음소거한다.
+
+마이크에 소리가 들어오는지는 로그로 확인할 수 있다. `level`은 10초 동안 가장 큰 값(0~32767)이다.
+
+```bash
+adb logcat | grep -E "REC :|PLAY:"
+# REC  level: 8     → 무음. 위 3·4번 확인
+# REC  level: 수천  → 정상
+# REC 줄이 안 나옴  → 앱에서 음소거 중 (정상 동작)
 ```
 
-노트북 브라우저에서 같은 방(`test`)에 다른 identity로 들어가면 에뮬레이터와 서로 들린다.
+Pleos에서는 홈 키(`adb shell input keyevent 3`)로 앱이 뒤로 가지 않는다. 앱이 뒤에 있을 때를 시험하려면 하단 바의 내비 아이콘을 눌러 순정 내비를 앞으로 띄운다.
 
 ## 문서
 
