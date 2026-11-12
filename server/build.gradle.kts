@@ -18,21 +18,28 @@ repositories {
 }
 
 dependencies {
-	implementation("org.springframework.boot:spring-boot-h2console")
-	implementation("org.springframework.boot:spring-boot-starter-actuator")
-	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
-	implementation("org.springframework.boot:spring-boot-starter-security")
-	implementation("org.springframework.boot:spring-boot-starter-validation")
+	// 웹 API(REST)
 	implementation("org.springframework.boot:spring-boot-starter-webmvc")
+	// 실시간 연결(WebSocket)
 	implementation("org.springframework.boot:spring-boot-starter-websocket")
-	runtimeOnly("com.h2database:h2")
-	runtimeOnly("org.postgresql:postgresql")
-	testImplementation("org.springframework.boot:spring-boot-starter-actuator-test")
-	testImplementation("org.springframework.boot:spring-boot-starter-data-jpa-test")
-	testImplementation("org.springframework.boot:spring-boot-starter-security-test")
-	testImplementation("org.springframework.boot:spring-boot-starter-validation-test")
+	// DB(JPA)
+	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+	// 접근 권한(토큰 확인)
+	implementation("org.springframework.boot:spring-boot-starter-security")
+	// 입력값 검사(@NotBlank 등)
+	implementation("org.springframework.boot:spring-boot-starter-validation")
+	// 상태 확인 주소(/actuator/health)
+	implementation("org.springframework.boot:spring-boot-starter-actuator")
+	// 통화 참가 토큰 발급(LiveKit)
+	implementation("io.livekit:livekit-server:0.17.0")
+	// 사진 저장(S3 호환 저장소: Supabase Storage)
+	implementation(platform("software.amazon.awssdk:bom:2.42.30"))
+	implementation("software.amazon.awssdk:s3")
+
+	runtimeOnly("com.h2database:h2")          // 개발용 DB(내 컴퓨터 파일)
+	runtimeOnly("org.postgresql:postgresql")  // 배포용 DB(Supabase PostgreSQL)
+
 	testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
-	testImplementation("org.springframework.boot:spring-boot-starter-websocket-test")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
