@@ -20,6 +20,10 @@ pleosTts = "3.3.1"
 pleosStt = "3.3.1"
 pleosFusedLocation = "1.1.3"
 
+# NAVER 지도. naver-map-compose 는 Compose 버전(BOM 2024.12 = 1.7)에 맞춘 1.7.x
+naverMap = "3.24.1"
+naverMapCompose = "1.7.4"
+
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycle" }
@@ -47,6 +51,9 @@ pleos-navihelper = { group = "ai.pleos.playground", name = "NaviHelper", version
 pleos-tts = { group = "ai.pleos.playground", name = "TextToSpeech", version.ref = "pleosTts" }
 pleos-stt = { group = "ai.pleos.playground", name = "SpeechToText", version.ref = "pleosStt" }
 pleos-fusedlocation = { group = "ai.pleos.playground", name = "FusedLocation", version.ref = "pleosFusedLocation" }
+
+naver-map-sdk = { group = "com.naver.maps", name = "map-sdk", version.ref = "naverMap" }
+naver-map-compose = { group = "io.github.fornewid", name = "naver-map-compose", version.ref = "naverMapCompose" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

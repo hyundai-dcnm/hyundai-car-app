@@ -50,6 +50,8 @@ dependencies {
     implementation(project(":core:model"))
     implementation(project(":core:trip"))
     implementation(project(":core:call"))
+    implementation(project(":core:location"))
+    implementation(project(":core:map"))
     implementation(project(":feature:room"))
     implementation(project(":feature:trip"))
 

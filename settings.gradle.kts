@@ -21,6 +21,8 @@ dependencyResolutionManagement {
         maven("https://nexus-playground.pleos.ai/repository/maven-releases/")
         // LiveKit Android SDK의 audioswitch 의존성
         maven("https://jitpack.io") { content { includeGroup("com.github.davidliu") } }
+        // NAVER 지도 SDK
+        maven("https://repository.map.naver.com/archive/maven") { content { includeGroup("com.naver.maps") } }
     }
 }
 
@@ -32,5 +34,6 @@ include(":core:trip")
 include(":core:call")
 include(":core:location")
 include(":core:navi")
+include(":core:map")
 include(":feature:room")
 include(":feature:trip")

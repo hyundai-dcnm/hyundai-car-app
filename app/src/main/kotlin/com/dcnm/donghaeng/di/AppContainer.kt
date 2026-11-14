@@ -4,6 +4,7 @@ import android.content.Context
 import com.dcnm.donghaeng.BuildConfig
 import com.dcnm.donghaeng.core.call.CallClient
 import com.dcnm.donghaeng.core.call.LiveKitCallClient
+import com.dcnm.donghaeng.core.location.LocationSource
 import com.dcnm.donghaeng.core.model.CallCredentials
 import com.dcnm.donghaeng.core.trip.FakeTripRepository
 import com.dcnm.donghaeng.core.trip.TripRepository
@@ -22,4 +23,7 @@ class AppContainer(context: Context) {
     val trips: TripRepository = FakeTripRepository(appScope, devCall)
 
     val call: CallClient = LiveKitCallClient(context, appScope)
+
+    /** 차량 위치(Pleos FusedLocation). 권한을 받은 뒤 MainActivity 에서 start() 한다 */
+    val location: LocationSource = LocationSource(context).apply { initialize() }
 }
