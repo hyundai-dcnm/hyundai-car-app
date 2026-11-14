@@ -10,6 +10,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -19,6 +20,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.dcnm.donghaeng.core.location.LocationSource
+import com.dcnm.donghaeng.core.map.TripMap
 import com.dcnm.donghaeng.feature.room.RoomScreen
 import com.dcnm.donghaeng.feature.room.RoomViewModel
 import com.dcnm.donghaeng.feature.trip.TripScreen
@@ -36,6 +39,14 @@ class MainActivity : ComponentActivity() {
                     val micLauncher = rememberLauncherForActivityResult(
                         ActivityResultContracts.RequestMultiplePermissions(),
                     ) { hasMic = it[Manifest.permission.RECORD_AUDIO] == true }
+                    // 차량 위치 권한. 앱을 켤 때 한 번 묻고, 받으면 위치 수신을 시작한다.
+                    val locationLauncher = rememberLauncherForActivityResult(
+                        ActivityResultContracts.RequestPermission(),
+                    ) { if (it) container.location.start() }
+                    LaunchedEffect(Unit) {
+                        if (container.location.hasPermission()) container.location.start()
+                        else locationLauncher.launch(LocationSource.PERMISSION)
+                    }
                     // 방에 들어가 있으면 여행방 화면, 아니면 방 만들기·참여 화면.
                     val trip by container.trips.trip.collectAsStateWithLifecycle()
                     if (trip == null) {
@@ -50,6 +61,15 @@ class MainActivity : ComponentActivity() {
                             ),
                             hasMicPermission = hasMic,
                             onRequestMicPermission = { micLauncher.launch(callPermissions()) },
+                            map = { modifier ->
+                                val me by container.location.location.collectAsStateWithLifecycle()
+                                TripMap(
+                                    myLocation = me?.location,
+                                    myHeadingDeg = me?.headingDeg,
+                                    destination = trip?.destination,
+                                    modifier = modifier,
+                                )
+                            },
                         )
                     }
                 }

@@ -40,12 +40,12 @@ fun TripScreen(
     hasMicPermission: Boolean,
     onRequestMicPermission: () -> Unit,
     modifier: Modifier = Modifier,
+    /** 왼쪽 지도 영역. 앱에서 core:map 의 TripMap 을 넣는다. 비우면 회색 자리만 보인다 */
+    map: @Composable (Modifier) -> Unit = { MapPlaceholder(it) },
 ) {
     val ui by viewModel.ui.collectAsStateWithLifecycle()
     Row(modifier.fillMaxSize()) {
-        Box(Modifier.weight(1.4f).fillMaxHeight().background(Color(0xFFE9EDF2)), contentAlignment = Alignment.Center) {
-            Text("지도", style = MaterialTheme.typography.titleLarge)
-        }
+        map(Modifier.weight(1.4f).fillMaxHeight())
         Column(
             Modifier.width(560.dp).fillMaxHeight().padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -74,6 +74,13 @@ fun TripScreen(
                 onLeave = viewModel::leaveCall,
             )
         }
+    }
+}
+
+@Composable
+private fun MapPlaceholder(modifier: Modifier) {
+    Box(modifier.background(Color(0xFFE9EDF2)), contentAlignment = Alignment.Center) {
+        Text("지도", style = MaterialTheme.typography.titleLarge)
     }
 }
 
