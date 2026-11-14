@@ -27,3 +27,6 @@ google-services.json
 reports/
 research_notes/
 docs/
+
+# 서버 개발용 DB·사진
+server/data/
