@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- dangerous 등급(에뮬레이터 확인). 앱이 위치 공유 시작 전에 런타임으로 요청한다.
+         주행 중(D)에는 시스템 권한 창이 막히므로 정차 중에 요청해야 한다. -->
+    <uses-permission android:name="pleos.car.permission.FUSED_LOCATION" />
+</manifest>
