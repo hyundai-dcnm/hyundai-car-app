@@ -52,6 +52,7 @@ core/trip           TripRepository 인터페이스 + 서버 없이 도는 FakeTr
 core/call           음성 통화. CallClient 인터페이스 + LiveKit 구현
 feature/room        방 만들기·초대 코드로 참여 화면
 feature/trip        여행방 화면: 일행, 목적지 제안·수락, 위치 공유 토글, 통화. 왼쪽은 지도 자리
+server/             서버. 실행 및 배포는 server/README.md 확인
 ```
 
 의존 방향: `app → feature/* → core/* → core/model`.
