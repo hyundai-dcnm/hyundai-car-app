@@ -2,88 +2,98 @@ package com.dcnm.donghaeng
 
 import android.Manifest
 import android.content.pm.PackageManager
-import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Text
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.dcnm.donghaeng.core.location.LocationSource
+import com.dcnm.donghaeng.core.map.MapCar
 import com.dcnm.donghaeng.core.map.TripMap
-import com.dcnm.donghaeng.feature.room.RoomScreen
-import com.dcnm.donghaeng.feature.room.RoomViewModel
-import com.dcnm.donghaeng.feature.trip.TripScreen
-import com.dcnm.donghaeng.feature.trip.TripViewModel
+import com.dcnm.donghaeng.vehicle.*
+import kotlinx.coroutines.delay
 
 class MainActivity : ComponentActivity() {
+    private lateinit var ux: VehicleUxMonitor
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val container = (application as DonghaengApp).container
+        ux = VehicleUxMonitor(this)
+        container.navi.start()
         setContent {
-            MaterialTheme {
-                Surface {
-                    var hasMic by remember { mutableStateOf(granted(Manifest.permission.RECORD_AUDIO)) }
-                    // 통화 알림 권한은 함께 묻되 거절해도 통화는 된다 (알림만 안 보임).
-                    val micLauncher = rememberLauncherForActivityResult(
-                        ActivityResultContracts.RequestMultiplePermissions(),
-                    ) { hasMic = it[Manifest.permission.RECORD_AUDIO] == true }
-                    // 차량 위치 권한. 앱을 켤 때 한 번 묻고, 받으면 위치 수신을 시작한다.
-                    val locationLauncher = rememberLauncherForActivityResult(
-                        ActivityResultContracts.RequestPermission(),
-                    ) { if (it) container.location.start() }
-                    LaunchedEffect(Unit) {
-                        if (container.location.hasPermission()) container.location.start()
-                        else locationLauncher.launch(LocationSource.PERMISSION)
+            val mode by ux.mode.collectAsStateWithLifecycle()
+            val trip by container.trips.trip.collectAsStateWithLifecycle()
+            val me by container.location.location.collectAsStateWithLifecycle()
+            val locationState by container.location.status.collectAsStateWithLifecycle()
+            val others by container.trips.locations.collectAsStateWithLifecycle()
+            var hasMic by remember { mutableStateOf(granted(Manifest.permission.RECORD_AUDIO)) }
+            var hasLocation by remember { mutableStateOf(container.location.hasPermission()) }
+            var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
+            val vm: VehicleViewModel = viewModel(factory = viewModelFactory { initializer { VehicleViewModel(container.trips, container.call) } })
+            val ui by vm.ui.collectAsStateWithLifecycle()
+            val micLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { hasMic = it }
+            val locationLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+                hasLocation = it
+                if (it) container.location.start()
+            }
+            DisposableEffect(Unit) {
+                val observer = LifecycleEventObserver { _, event ->
+                    if (event == Lifecycle.Event.ON_RESUME) {
+                        hasMic = granted(Manifest.permission.RECORD_AUDIO)
+                        hasLocation = container.location.hasPermission()
+                        if (hasLocation) container.location.start()
                     }
-                    // 방에 들어가 있으면 여행방 화면, 아니면 방 만들기·참여 화면.
-                    val trip by container.trips.trip.collectAsStateWithLifecycle()
-                    if (trip == null) {
-                        RoomScreen(viewModel(factory = viewModelFactory { initializer { RoomViewModel(container.trips) } }))
-                    } else {
-                        TripScreen(
-                            viewModel = viewModel(
-                                key = trip!!.id,
-                                factory = viewModelFactory {
-                                    initializer { TripViewModel(container.trips, container.call) }
-                                },
-                            ),
-                            hasMicPermission = hasMic,
-                            onRequestMicPermission = { micLauncher.launch(callPermissions()) },
-                            map = { modifier ->
-                                val me by container.location.location.collectAsStateWithLifecycle()
-                                TripMap(
-                                    myLocation = me?.location,
-                                    myHeadingDeg = me?.headingDeg,
-                                    destination = trip?.destination,
-                                    modifier = modifier,
-                                )
-                            },
-                        )
+                    if (event == Lifecycle.Event.ON_STOP) container.location.stop()
+                }
+                lifecycle.addObserver(observer)
+                onDispose { lifecycle.removeObserver(observer) }
+            }
+            LaunchedEffect(Unit) { container.trips.checkHealth() }
+            LaunchedEffect(ui.demo) {
+                while (true) {
+                    now = System.currentTimeMillis()
+                    if (!ui.demo && lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED) && container.location.hasPermission()) {
+                        container.location.location.value?.let { container.trips.sendLocation(it.location, it.headingDeg, it.measuredAtMillis) }
                     }
+                    delay(2_000)
                 }
             }
+            val fresh = hasLocation && me?.let { now - it.measuredAtMillis in 0..120_000 } == true
+            VehicleApp(vm, mode, container.navi, hasLocation, hasMic,
+                if (!hasLocation) "위치 권한 없음" else if (fresh) "현재 위치 수신 중" else "위치 수신 대기 또는 오래됨 · $locationState",
+                onLocation = { if (canConfigure(ux.mode.value)) locationLauncher.launch(LocationSource.PERMISSION) },
+                onMic = { if (canConfigure(ux.mode.value)) micLauncher.launch(Manifest.permission.RECORD_AUDIO) },
+                map = { modifier ->
+                    if (com.dcnm.donghaeng.core.map.BuildConfig.NAVER_MAP_CLIENT_ID.isBlank()) {
+                        Box(modifier.background(Color(0xFFE9ECEA)), contentAlignment = Alignment.Center) {
+                            Text("실제 지도를 불러올 준비 중이에요\n동행방과 목적지·공유 상태는 계속 확인할 수 있어요", modifier = androidx.compose.ui.Modifier.padding(24.dp), color = Color(0xFF6F7E82), fontSize = 21.sp)
+                        }
+                    } else TripMap(myLocation = me?.location?.takeIf { fresh }, myHeadingDeg = me?.headingDeg,
+                        destination = trip?.destination, modifier = modifier,
+                        others = others.filter { now - it.updatedAtMillis in 0..120_000 && trip?.members?.any { m -> m.id == it.memberId && m.sharingLocation } == true }
+                            .filterNot { it.memberId == container.trips.myMemberId.value }
+                            .map { l -> MapCar(l.memberId, trip?.members?.firstOrNull { it.id == l.memberId }?.carLabel ?: "동행", l.location) })
+                })
         }
     }
-
-    private fun callPermissions(): Array<String> =
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            arrayOf(Manifest.permission.RECORD_AUDIO, Manifest.permission.POST_NOTIFICATIONS)
-        } else {
-            arrayOf(Manifest.permission.RECORD_AUDIO)
-        }
-
-    private fun granted(permission: String) =
-        ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
+    override fun onStart() { super.onStart(); ux.start() }
+    override fun onStop() { ux.stop(); super.onStop() }
+    override fun onDestroy() { (application as DonghaengApp).container.navi.release(); super.onDestroy() }
+    private fun granted(permission: String) = ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
 }
