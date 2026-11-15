@@ -10,6 +10,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -33,6 +35,16 @@ fun AutomotiveTheme(content: @Composable () -> Unit) {
         surface = AutoColors.Panel, surfaceVariant = AutoColors.Raised, onSurface = AutoColors.Text,
         onSurfaceVariant = AutoColors.Muted, onPrimary = Color.White)) {
         Surface(Modifier.fillMaxSize(), color = AutoColors.Ink, contentColor = AutoColors.Text, content = content)
+    }
+}
+
+/** Size all controls together against the Figma reference, including larger car windows. */
+@Composable
+fun AutomotiveViewport(content: @Composable () -> Unit) {
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val density = LocalDensity.current
+        val scale = minOf(maxWidth.value / 1280f, maxHeight.value / 800f).coerceIn(.75f, 2f)
+        CompositionLocalProvider(LocalDensity provides Density(density.density * scale, density.fontScale), content = content)
     }
 }
 

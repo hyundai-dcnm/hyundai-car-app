@@ -15,6 +15,7 @@ import java.io.IOException
 import java.util.concurrent.TimeUnit
 
 data class RemoteLocation(val memberId: String, val location: LatLng, val headingDeg: Double?, val speedKph: Double?, val updatedAtMillis: Long)
+data class TripPhoto(val id: String, val uploaderName: String, val contentType: String, val sizeBytes: Long, val createdAtMillis: Long, val fileUrl: String)
 
 /** Frontend adapter for the unchanged contract/api.md. Tokens stay in process memory. */
 class ServerTripRepository(
@@ -123,6 +124,32 @@ class ServerTripRepository(
 
     fun pauseLocationSending() { consent.value = false }
 
+    suspend fun listPhotos(): List<TripPhoto> {
+        val s = requireSession()
+        val photos = gson.fromJson(request("GET", "/api/trips/${s.tripId}/photos", token = s.token), Array<TripPhoto>::class.java).toList()
+        check(session == s) { "동행이 변경되었어요" }
+        return photos
+    }
+    suspend fun photoBytes(id: String): ByteArray {
+        val s = requireSession()
+        val req = Request.Builder().url("$baseUrl/api/trips/${s.tripId}/photos/$id/file").header("Authorization", "Bearer ${s.token}").build()
+        return execute(req).also { check(session == s) { "동행이 변경되었어요" } }
+    }
+    suspend fun uploadPhoto(bytes: ByteArray): TripPhoto {
+        require(bytes.isNotEmpty() && bytes.size <= 10 * 1024 * 1024) { "사진은 10MB까지 올릴 수 있어요" }
+        val s = requireSession()
+        val body = MultipartBody.Builder().setType(MultipartBody.FORM)
+            .addFormDataPart("file", "trip-photo.jpg", bytes.toRequestBody("image/jpeg".toMediaType())).build()
+        val req = Request.Builder().url("$baseUrl/api/trips/${s.tripId}/photos").header("Authorization", "Bearer ${s.token}").post(body).build()
+        val photo = gson.fromJson(execute(req).toString(Charsets.UTF_8), TripPhoto::class.java)
+        check(session == s) { "동행이 변경되었어요" }
+        return photo
+    }
+    suspend fun deletePhoto(id: String) {
+        val s = requireSession()
+        request("DELETE", "/api/trips/${s.tripId}/photos/$id", token = s.token)
+    }
+
     private fun startSocket(s: Session) {
         val generation = ++socketGeneration
         socketJob?.cancel()
@@ -184,22 +211,28 @@ class ServerTripRepository(
         session = null; consent.value = false; socketJob?.cancel(); socket?.cancel(); socket = null
         trip.value = null; myMemberId.value = null; locations.value = emptyList(); connection.value = ConnectionStatus.Disconnected
     }
-    private suspend fun request(method: String, path: String, body: Any? = null, token: String? = null): String = suspendCancellableCoroutine { cont ->
+    private suspend fun request(method: String, path: String, body: Any? = null, token: String? = null): String {
         val payload = if (method in listOf("GET", "DELETE")) null else gson.toJson(body ?: emptyMap<String, String>()).toRequestBody("application/json".toMediaType())
         val req = Request.Builder().url(baseUrl + path).method(method, payload).apply { if (token != null) header("Authorization", "Bearer $token") }.build()
+        return execute(req).toString(Charsets.UTF_8)
+    }
+    private suspend fun execute(req: Request): ByteArray = suspendCancellableCoroutine { cont ->
         val call = client.newCall(req)
         cont.invokeOnCancellation { call.cancel() }
         call.enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) { if (cont.isActive) cont.resumeWith(Result.failure(IOException("서버에 연결할 수 없어요. 잠시 후 다시 시도해 주세요"))) }
             override fun onResponse(call: Call, response: Response) {
-                response.use {
-                    val text = it.body?.string().orEmpty()
-                    val result = if (it.isSuccessful) Result.success(text) else {
+                val result = runCatching {
+                    response.use {
+                        val bytes = it.body?.bytes() ?: byteArrayOf()
+                        if (it.isSuccessful) bytes else {
+                        val text = bytes.toString(Charsets.UTF_8)
                         val message = runCatching { JsonParser.parseString(text).asJsonObject["message"].asString }.getOrNull()
-                        Result.failure(IOException(message ?: "서버 요청에 실패했어요 (${it.code})"))
+                        throw IOException(message ?: "서버 요청에 실패했어요 (${it.code})")
+                        }
                     }
-                    if (cont.isActive) cont.resumeWith(result)
                 }
+                if (cont.isActive) cont.resumeWith(result)
             }
         })
     }

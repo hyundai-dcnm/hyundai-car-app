@@ -1,6 +1,9 @@
 package com.dcnm.donghaeng.vehicle
 
 import android.graphics.Bitmap
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -18,6 +21,8 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
+import com.dcnm.donghaeng.core.model.Destination
+import com.dcnm.donghaeng.core.model.LatLng
 
 /** Runs only against a parked emulator, using the real platform restriction state. */
 @RunWith(AndroidJUnit4::class)
@@ -34,6 +39,7 @@ class VehicleFlowTest {
     }
     @Test fun parkedPreviewRequiresMutualConsentAndNeverStartsLocationOrAudio() {
         compose.waitUntil(15_000) { compose.onAllNodesWithText("설정 가능").fetchSemanticsNodes().isNotEmpty() }
+        capture("real-home")
         compose.onNodeWithContentDescription("설정").performClick()
         tap("디자인 시연 시작")
         capture("home")
@@ -99,9 +105,58 @@ class VehicleFlowTest {
             repository.proposeDestination(VehicleViewModel.destinations.first())
             assertEquals("양양 해변 주차장", repository.trip.value!!.destination?.name)
             assertTrue(repository.callCredentials().url.startsWith("wss://"))
+            assertTrue(repository.listPhotos().isEmpty())
+            val bitmap = Bitmap.createBitmap(16, 16, Bitmap.Config.ARGB_8888).apply { eraseColor(android.graphics.Color.BLUE) }
+            val bytes = java.io.ByteArrayOutputStream().use { out -> bitmap.compress(Bitmap.CompressFormat.JPEG, 85, out); bitmap.recycle(); out.toByteArray() }
+            val photo = repository.uploadPhoto(bytes)
+            try {
+                assertTrue(repository.listPhotos().any { it.id == photo.id })
+                assertNotNull(photoThumbnail(repository.photoBytes(photo.id)))
+                val app = compose.activity.application as DonghaengApp
+                val albumVm = VehicleViewModel(repository, app.container.call).apply { go("ALBUM") }
+                compose.activity.runOnUiThread {
+                    compose.activity.setContent { VehicleApp(albumVm, UxMode.Unrestricted, app.container.navi, false, false, "위치 권한 없음", {}, {}, {}) }
+                }
+                compose.waitUntil(20_000) { albumVm.album.value.photos.any { it.id == photo.id } }
+                compose.onNodeWithText("새로고침").performScrollTo()
+                compose.waitUntil(20_000) { compose.onAllNodesWithContentDescription("${photo.uploaderName}님의 동행 사진").fetchSemanticsNodes().isNotEmpty() }
+                capture("album")
+            } finally { repository.deletePhoto(photo.id) }
+            assertTrue(repository.listPhotos().isEmpty())
         } finally {
             if (repository.trip.value != null) repository.leaveTrip()
             scope.cancel()
         }
+    }
+    @Test fun destinationHistoryIsEncryptedAndRoundTrips() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val store = DestinationStore(context, "destination-test")
+        val d = Destination("Synthetic saved beach", LatLng(38.0306, 128.7166))
+        val saved = SavedDestinations(listOf(d), mapOf("집" to d))
+        store.save(saved)
+        assertEquals(saved, store.load())
+        val encrypted = context.getSharedPreferences("destination-test", 0).getString("encrypted", "")!!
+        assertFalse(encrypted.contains("Synthetic"))
+        assertFalse(encrypted.contains("38.0306"))
+        context.getSharedPreferences("destination-test", 0).edit().clear().commit()
+    }
+    @Test fun launcherIconRendersWithBrandSymbol() {
+        val context = compose.activity
+        val icon = context.packageManager.getApplicationIcon(context.packageName)
+        val bitmap = Bitmap.createBitmap(256, 256, Bitmap.Config.ARGB_8888)
+        icon.setBounds(0, 0, 256, 256)
+        icon.draw(android.graphics.Canvas(bitmap))
+        File(context.cacheDir, "icon.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        bitmap.recycle()
+        context.runOnUiThread {
+            context.setContent {
+                AutomotiveTheme {
+                    androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize(), contentAlignment = androidx.compose.ui.Alignment.Center) {
+                        androidx.compose.ui.viewinterop.AndroidView(factory = { android.widget.ImageView(it).apply { setImageDrawable(icon) } }, modifier = androidx.compose.ui.Modifier.size(192.dp))
+                    }
+                }
+            }
+        }
+        capture("launcher-icon")
     }
 }

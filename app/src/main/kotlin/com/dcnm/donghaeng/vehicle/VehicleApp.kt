@@ -32,7 +32,7 @@ import kotlinx.coroutines.delay
 @Composable
 fun VehicleApp(vm: VehicleViewModel, ux: UxMode, navi: NaviSource, hasLocation: Boolean,
     hasMic: Boolean, locationStatus: String, onLocation: () -> Unit, onMic: () -> Unit,
-    map: @Composable (Modifier) -> Unit) {
+    map: @Composable (Modifier) -> Unit, onPickPhoto: () -> Unit = {}) {
     val ui by vm.ui.collectAsStateWithLifecycle()
     val trip by vm.repository.trip.collectAsStateWithLifecycle()
     val connection by vm.repository.connection.collectAsStateWithLifecycle()
@@ -68,8 +68,9 @@ fun VehicleApp(vm: VehicleViewModel, ux: UxMode, navi: NaviSource, hasLocation: 
     BackHandler(ui.screen != "S01") { home() }
 
     AutomotiveTheme {
+        AutomotiveViewport {
         BoxWithConstraints(Modifier.fillMaxSize().background(AutoColors.Ink)) {
-            val panelWidth = (maxWidth * .35f).coerceIn(340.dp, 448.dp)
+            val panelWidth = (maxWidth * .3375f).coerceIn(320.dp, 432.dp)
             Row(Modifier.fillMaxSize()) {
                 Column(Modifier.width(96.dp).fillMaxHeight().padding(horizontal = 12.dp, vertical = 20.dp),
                     horizontalAlignment = Alignment.CenterHorizontally) {
@@ -125,17 +126,30 @@ fun VehicleApp(vm: VehicleViewModel, ux: UxMode, navi: NaviSource, hasLocation: 
                         when (ui.screen) {
                             "S01" -> {
                                 title("어디로 함께 갈까요?", if (ui.demo) "민지님, 오늘도 반가워요." else "함께할 동행을 준비해 보세요.") {
-                                    SettingRow("search", "목적지", if (ui.demo) "양양 해변 주차장" else destName ?: "목적지를 선택해 주세요") { configure("S08") }
-                                    AutoLabel(if (ui.demo) "시연 목적지 · 실제 검색/경로 아님" else "동행방에서 목적지를 제안하고 함께 수락해요.")
+                                    SettingRow("search", "목적지", if (ui.demo) "양양 해변 주차장" else destName ?: ui.draftDestination?.name ?: "목적지를 선택해 주세요") { configure("S08") }
+                                    if (!ui.demo) Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                        listOf("집", "회사").forEach { slot ->
+                                            Column(Modifier.weight(1f).clip(RoundedCornerShape(13.dp)).background(AutoColors.Raised).clickable { if (setupAllowed) vm.favorite(slot) else vm.go("E06") }.padding(14.dp)) {
+                                                Text(slot, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                                                Text(ui.saved.favorites[slot]?.name ?: "등록하기", fontSize = 15.sp, color = AutoColors.Muted, maxLines = 1)
+                                            }
+                                        }
+                                    } else AutoLabel("시연 목적지 · 실제 검색/경로 아님")
                                     HorizontalDivider(color = AutoColors.Line, modifier = Modifier.padding(vertical = 8.dp))
                                     Text("함께 가는 즐거움", fontSize = 22.sp, fontWeight = FontWeight.Bold)
                                     AutoButton("동행 만들기", true) { configure("S05") }
                                     AutoButton("주변 동행 찾기") { configure("S21") }
                                 }
-                                Column(Modifier.align(Alignment.TopEnd).padding(24.dp).width(300.dp).clip(RoundedCornerShape(22.dp)).background(AutoColors.Panel).padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Column(Modifier.align(Alignment.TopEnd).padding(24.dp).width(336.dp).clip(RoundedCornerShape(22.dp)).background(AutoColors.Panel).padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                                     Text("동행", fontSize = 25.sp, fontWeight = FontWeight.Bold)
-                                    AutoButton("친구 · 연결 요청") { configure("S02") }
-                                    AutoButton("초대 코드로 참여") { configure("S06") }
+                                    AutoButton("친구 · 연결 요청", modifier = Modifier.height(48.dp)) { configure("S02") }
+                                    AutoButton("초대 코드로 참여", modifier = Modifier.height(48.dp)) { configure("S06") }
+                                }
+                                if (!ui.demo) ui.saved.recent.firstOrNull()?.let { recent ->
+                                    SmallCard(Modifier.align(Alignment.BottomEnd).padding(24.dp).width(336.dp).clickable { if (setupAllowed) vm.chooseDestination(recent) else vm.go("E06") }) {
+                                        AutoLabel("최근 선택한 목적지")
+                                        Text(recent.name, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                                    }
                                 }
                             }
                             "S05", "S06" -> title(if (ui.screen == "S05") "새로운 동행" else "동행 초대", "위치와 마이크는 따로 선택해요.") {
@@ -157,7 +171,9 @@ fun VehicleApp(vm: VehicleViewModel, ux: UxMode, navi: NaviSource, hasLocation: 
                                 AutoButton(if (trip?.proposal != null) "목적지 제안 확인" else "목적지 제안", true) { configure(if (trip?.proposal != null) "S09" else "S08") }
                                 AutoButton("동행 지도", onClick = { vm.go("S11") })
                             }
-                            "S08", "S30" -> title(if (ui.screen == "S30") "탐색 목적지" else "목적지 선택", "예시 장소 · 검색 제공자 미연동") {
+                            "S08", "S30" -> title(if (ui.screen == "S30") "탐색 목적지" else "목적지 선택", if (ui.demo) "시연 목적지" else "차량 내비와 저장한 장소에서 선택해요") {
+                                if (!ui.demo) DestinationContent(vm, destination?.let { Destination(it.name, it.location) }, setupAllowed)
+                                else {
                                 AutoLabel("실시간 장소 검색은 연결 전이에요. 아래 저장된 예시 좌표로 제안할 수 있어요.")
                                 VehicleViewModel.destinations.forEachIndexed { index, d ->
                                     AutoButton(d.name, primary = index == 0, enabled = setupAllowed && !ui.busy) {
@@ -166,6 +182,7 @@ fun VehicleApp(vm: VehicleViewModel, ux: UxMode, navi: NaviSource, hasLocation: 
                                     }
                                 }
                                 AutoButton("취소", onClick = home)
+                                }
                             }
                             "S09" -> title("함께 갈 목적지", trip?.proposal?.destination?.name ?: destName ?: "양양 해변 주차장 · 시연") {
                                 Text("같은 곳으로 갈까요?", fontSize = 28.sp, fontWeight = FontWeight.Bold)
@@ -283,7 +300,8 @@ fun VehicleApp(vm: VehicleViewModel, ux: UxMode, navi: NaviSource, hasLocation: 
                                 AutoButton("마이크 권한 확인", enabled = !hasMic && setupAllowed, onClick = onMic)
                                 if (ui.demo) AutoButton("시연 종료 · 실제 모드", true, onClick = vm::endPreview)
                                 else AutoButton("디자인 시연 시작", true, enabled = !inTrip && setupAllowed, onClick = vm::preview)
-                                if (inTrip) AutoButton("동행 나가기") { vm.go("S20") }
+                                if (inTrip) { AutoButton("여행 앨범") { configure("ALBUM") }; AutoButton("동행 나가기") { vm.go("S20") } }
+                                if (!ui.demo) AutoButton("저장한 목적지 지우기", enabled = setupAllowed) { vm.clearHistory() }
                                 if (ui.demo) { AutoButton("예외 상태 살펴보기") { vm.go("EXCEPTIONS") }; AutoButton("휴식 추천 · 화면 시연") { configure("REST") }; AutoButton("여행 앨범 · 화면 시연") { configure("ALBUM") } }
                             }
                             "EXCEPTIONS" -> title("예외 화면 시연", "실제 오류와 분리된 디자인 확인") {
@@ -295,10 +313,8 @@ fun VehicleApp(vm: VehicleViewModel, ux: UxMode, navi: NaviSource, hasLocation: 
                                 MemberTile("한 끼 쉬어가기", "식당 예시 · 정차 후 확인") { vm.message("실제 식당 정보는 아직 없어요") }
                                 AutoButton("동행 지도", onClick = home)
                             }
-                            "ALBUM" -> title("우리의 여행 앨범", "추가 화면 시연 · 사진을 올리지 않아요") {
-                                FigmaAsset("cover", Modifier.fillMaxWidth().height(220.dp))
-                                Text("함께 남긴 순간", fontSize = 28.sp, fontWeight = FontWeight.Bold)
-                                AutoLabel("아직 불러온 사진이 없어요. 서버 사진 API는 있지만 이 화면의 조회·업로드는 후속 연결이 필요해요.")
+                            "ALBUM" -> title("우리의 여행 앨범", if (ui.demo) "시연 앨범" else "${trip?.name ?: "동행"} · 사진을 함께 남겨요") {
+                                AlbumContent(vm, ui.demo, setupAllowed, onPickPhoto)
                                 AutoButton("동행 지도", onClick = home)
                             }
                             else -> title(when(ui.screen) { "E06" -> "정차 후 이용해 주세요"; "E01" -> "동행 연결이 끊겼어요"; "E03" -> "내비 응답을 확인해 주세요"; "E05" -> "초대에 참여할 수 없어요"; else -> "상태를 확인해 주세요" }, "현재 정보를 확인한 뒤 다시 시도해 주세요") {
@@ -320,6 +336,7 @@ fun VehicleApp(vm: VehicleViewModel, ux: UxMode, navi: NaviSource, hasLocation: 
                 }
             }
         }
+    }
     }
 }
 
@@ -373,7 +390,7 @@ private fun MemberList(demo: Boolean, trip: Trip?, speaking: List<String>, updat
 }
 
 @Composable
-private fun DemoMap(route: Boolean, nearby: Boolean) {
+private fun DemoMap(route: Boolean, nearby: Boolean, showMarkers: Boolean = true) {
     BoxWithConstraints(Modifier.fillMaxSize().background(Color(0xFFE9ECEA))) {
         FigmaAsset("terrain", Modifier.fillMaxSize())
         listOf(Triple("현남면", .40f, .08f), Triple("인구리", .48f, .64f), Triple("남애항", .84f, .77f), Triple("남애천", .61f, .80f), Triple("동해대로", .35f, .35f), Triple("인구중앙길", .43f, .49f), Triple("솔밭공원", .07f, .62f), Triple("죽도해변", .86f, .12f)).forEach { (name, x, y) ->
@@ -384,10 +401,15 @@ private fun DemoMap(route: Boolean, nearby: Boolean) {
             FigmaAsset("heading", Modifier.offset(maxWidth * .33f, maxHeight * .73f).size(50.dp, 56.dp))
             DemoMarker("규원  300 m", AutoColors.Amber, Modifier.offset(maxWidth * .49f, maxHeight * .36f))
             DemoMarker("자민  500 m", AutoColors.Raised, Modifier.offset(maxWidth * .25f, maxHeight * .68f))
-        } else DemoMarker(if (nearby) "내 주변" else "나", AutoColors.Blue, Modifier.offset(maxWidth * .61f, maxHeight * .36f))
+        } else if (showMarkers) DemoMarker(if (nearby) "내 주변" else "나", AutoColors.Blue, Modifier.offset(maxWidth * .61f, maxHeight * .36f))
         if (nearby) FigmaAsset("radar_range", Modifier.align(Alignment.CenterEnd).padding(end = 140.dp).size(440.dp))
-        Surface(Modifier.align(Alignment.BottomEnd).padding(24.dp), color = AutoColors.Panel, shape = RoundedCornerShape(12.dp)) { Text("시연 지도 · 실제 지리/위치 아님", Modifier.padding(12.dp), fontSize = 16.sp, color = AutoColors.Amber) }
+        Surface(Modifier.align(Alignment.BottomEnd).padding(24.dp), color = AutoColors.Panel, shape = RoundedCornerShape(12.dp)) { Text(if (showMarkers) "시연 지도 · 실제 지리/위치 아님" else "예시 지도 · 실지도 연결 전 · 위치 표시 없음", Modifier.padding(12.dp), fontSize = 16.sp, color = AutoColors.Amber) }
     }
+}
+
+@Composable
+fun MapDesignPreview(modifier: Modifier) {
+    Box(modifier) { DemoMap(route = false, nearby = false, showMarkers = false) }
 }
 
 @Composable

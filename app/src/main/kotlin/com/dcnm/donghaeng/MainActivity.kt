@@ -45,12 +45,15 @@ class MainActivity : ComponentActivity() {
             var hasMic by remember { mutableStateOf(granted(Manifest.permission.RECORD_AUDIO)) }
             var hasLocation by remember { mutableStateOf(container.location.hasPermission()) }
             var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
-            val vm: VehicleViewModel = viewModel(factory = viewModelFactory { initializer { VehicleViewModel(container.trips, container.call) } })
+            val vm: VehicleViewModel = viewModel(factory = viewModelFactory { initializer { VehicleViewModel(container.trips, container.call, DestinationStore(applicationContext)) } })
             val ui by vm.ui.collectAsStateWithLifecycle()
             val micLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { hasMic = it }
             val locationLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
                 hasLocation = it
                 if (it) container.location.start()
+            }
+            val photoLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+                if (uri != null && canConfigure(ux.mode.value)) vm.preparePhoto(applicationContext, uri)
             }
             DisposableEffect(Unit) {
                 val observer = LifecycleEventObserver { _, event ->
@@ -79,11 +82,10 @@ class MainActivity : ComponentActivity() {
                 if (!hasLocation) "위치 권한 없음" else if (fresh) "현재 위치 수신 중" else "위치 수신 대기 또는 오래됨 · $locationState",
                 onLocation = { if (canConfigure(ux.mode.value)) locationLauncher.launch(LocationSource.PERMISSION) },
                 onMic = { if (canConfigure(ux.mode.value)) micLauncher.launch(Manifest.permission.RECORD_AUDIO) },
+                onPickPhoto = { if (canConfigure(ux.mode.value)) photoLauncher.launch("image/*") },
                 map = { modifier ->
                     if (com.dcnm.donghaeng.core.map.BuildConfig.NAVER_MAP_CLIENT_ID.isBlank()) {
-                        Box(modifier.background(Color(0xFFE9ECEA)), contentAlignment = Alignment.Center) {
-                            Text("실제 지도를 불러올 준비 중이에요\n동행방과 목적지·공유 상태는 계속 확인할 수 있어요", modifier = androidx.compose.ui.Modifier.padding(24.dp), color = Color(0xFF6F7E82), fontSize = 21.sp)
-                        }
+                        MapDesignPreview(modifier)
                     } else TripMap(myLocation = me?.location?.takeIf { fresh }, myHeadingDeg = me?.headingDeg,
                         destination = trip?.destination, modifier = modifier,
                         others = others.filter { now - it.updatedAtMillis in 0..120_000 && trip?.members?.any { m -> m.id == it.memberId && m.sharingLocation } == true }
