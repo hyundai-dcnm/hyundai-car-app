@@ -30,6 +30,9 @@ android {
             applicationIdSuffix = ".debug"
         }
         release {
+            // 제출용 APK에는 로컬 통화 시험용 접속 정보를 포함하지 않는다.
+            buildConfigField("String", "DEV_LIVEKIT_URL", "\"\"")
+            buildConfigField("String", "DEV_LIVEKIT_TOKEN", "\"\"")
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
