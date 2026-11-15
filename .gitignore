@@ -12,6 +12,7 @@
 *.aab
 build/
 .gradle/
+.kotlin/
 local.properties
 captures/
 .externalNativeBuild/

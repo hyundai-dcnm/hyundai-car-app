@@ -1,15 +1,12 @@
 package com.dcnm.donghaeng.di
 
 import android.content.Context
-import com.dcnm.donghaeng.BuildConfig
 import com.dcnm.donghaeng.core.call.CallClient
 import com.dcnm.donghaeng.core.call.LiveKitCallClient
 import com.dcnm.donghaeng.core.location.LocationSource
-import com.dcnm.donghaeng.core.model.CallCredentials
+import com.dcnm.donghaeng.vehicle.ServerTripRepository
 import com.dcnm.donghaeng.core.navi.DestinationAutoRouter
 import com.dcnm.donghaeng.core.navi.NaviSource
-import com.dcnm.donghaeng.core.trip.FakeTripRepository
-import com.dcnm.donghaeng.core.trip.TripRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -19,19 +16,15 @@ import kotlinx.coroutines.flow.map
 class AppContainer(context: Context) {
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
-    private val devCall = CallCredentials(BuildConfig.DEV_LIVEKIT_URL, BuildConfig.DEV_LIVEKIT_TOKEN)
-        .takeIf { it.url.isNotBlank() && it.token.isNotBlank() }
+    val trips = ServerTripRepository(appScope)
 
-    // TODO: ④와 API 를 정하면 서버 연동 구현으로 바꾼다.
-    val trips: TripRepository = FakeTripRepository(appScope, devCall)
+    /** 차량 내비(Pleos NaviHelper). start()/release() 는 MainActivity 에서 한다 */
+    val navi = NaviSource(context)
 
     val call: CallClient = LiveKitCallClient(context, appScope)
 
     /** 차량 위치(Pleos FusedLocation). 권한을 받은 뒤 MainActivity 에서 start() 한다 */
     val location: LocationSource = LocationSource(context).apply { initialize() }
-
-    /** 차량 내비(Pleos NaviHelper). 권한은 일반 등급이라 따로 묻지 않는다 */
-    val navi: NaviSource = NaviSource(context).apply { start() }
 
     init {
         // 여행방 목적지가 확정되면 내 차 내비에 길 안내를 요청한다
