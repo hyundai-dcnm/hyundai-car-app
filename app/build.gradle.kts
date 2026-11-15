@@ -5,6 +5,7 @@ plugins {
 }
 
 android {
+    useLibrary("android.car")
     namespace = "com.dcnm.donghaeng"
     compileSdk = 35
 
@@ -47,6 +48,17 @@ android {
 }
 
 dependencies {
+    implementation(project(":core:navi"))
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.google.code.gson:gson:2.11.0")
+    implementation("com.caverock:androidsvg-aar:1.4")
+    testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
+    testImplementation(libs.kotlinx.coroutines.test)
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation("androidx.test:runner:1.6.2")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
     implementation(project(":core:model"))
     implementation(project(":core:trip"))
     implementation(project(":core:call"))
