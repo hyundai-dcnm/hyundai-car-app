@@ -466,4 +466,3 @@ private fun NearbyContent(ui: VehicleUi, vm: VehicleViewModel, allowed: Boolean,
         }
     }
 }
-

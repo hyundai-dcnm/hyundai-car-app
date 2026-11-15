@@ -62,4 +62,3 @@ WSS 재접속은 최대 5회(1/2/4/8/16초) 후 수동 재시도로 전환하며
 - AndroidSVG 1.4: [Apache License 2.0](https://github.com/BigBadaboom/androidsvg/blob/master/LICENSE).
 - OkHttp 4.12.0, Gson 2.11.0, AndroidX Compose/Material 3: Apache License 2.0. 기존 SDK/네이버 지도 서비스의 별도 이용조건과 키 등록은 유지된다.
 - 폰트 파일은 새로 복제하지 않았고 Android 시스템 글꼴을 사용한다. Figma의 Noto Sans KR/Roboto와 기기별 메트릭 차이가 있을 수 있다.
-
