@@ -55,7 +55,6 @@ Windows에서는 `./gradlew` 대신 `gradlew.bat`를 사용합니다. debug APK 
 | 화면 규격 | **2560 × 1440 px, 160 dpi** |
 | UI 디자인 기준 | 1280 × 800. 차량 시스템 UI가 차지하는 공간에 따라 실제 앱 창 크기는 달라집니다. |
 | 실행 설정 | Cold Boot, RAM 4GB |
-| 이번 빌드·테스트 호스트 | macOS / Apple Silicon, JDK 17 |
 | Android 빌드 | Gradle 8.10.2, AGP 8.8.2, Kotlin 2.0.21, Jetpack Compose |
 | SDK 레벨 | compileSdk / targetSdk 35, minSdk 28 |
 | 차량 SDK 연동 | Pleos NaviHelper 3.0.5, FusedLocation 1.1.3 |
