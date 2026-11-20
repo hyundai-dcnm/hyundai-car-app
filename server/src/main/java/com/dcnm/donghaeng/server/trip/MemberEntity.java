@@ -28,6 +28,10 @@ public class MemberEntity {
     @Column(name = "sharing_location", nullable = false)
     private boolean sharingLocation = true;
 
+    /** 계정으로 들어온 차량이면 계정 id. 계정 없이 들어오면 비어 있다. 친구 초대(다음 단계)에서 쓴다. */
+    @Column(name = "account_id", length = 36)
+    private String accountId;
+
     @Column(name = "joined_at", nullable = false)
     private Instant joinedAt;
 
@@ -36,11 +40,13 @@ public class MemberEntity {
 
     protected MemberEntity() {}
 
-    public MemberEntity(String id, String tripId, String nickname, String carLabel, Instant joinedAt) {
+    /** accountId 는 계정 없이 들어오면 null. */
+    public MemberEntity(String id, String tripId, String nickname, String carLabel, String accountId, Instant joinedAt) {
         this.id = id;
         this.tripId = tripId;
         this.nickname = nickname;
         this.carLabel = carLabel;
+        this.accountId = accountId;
         this.joinedAt = joinedAt;
     }
 
@@ -48,6 +54,7 @@ public class MemberEntity {
     public String getTripId() { return tripId; }
     public String getNickname() { return nickname; }
     public String getCarLabel() { return carLabel; }
+    public String getAccountId() { return accountId; }
     public boolean isSharingLocation() { return sharingLocation; }
 
     public void setSharingLocation(boolean sharingLocation) { this.sharingLocation = sharingLocation; }

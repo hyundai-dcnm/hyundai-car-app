@@ -1,5 +1,6 @@
 package com.dcnm.donghaeng.server.trip;
 
+import com.dcnm.donghaeng.server.account.AccountService;
 import com.dcnm.donghaeng.server.auth.TripPrincipal;
 import com.dcnm.donghaeng.server.trip.TripModels.CallCredentials;
 import com.dcnm.donghaeng.server.trip.TripModels.Destination;
@@ -29,20 +30,26 @@ import org.springframework.web.bind.annotation.RestController;
 public class TripController {
 
     private final TripService trips;
+    private final AccountService accounts;
 
-    public TripController(TripService trips) {
+    public TripController(TripService trips, AccountService accounts) {
         this.trips = trips;
+        this.accounts = accounts;
     }
 
+    /** accountToken 은 선택. 넣으면 방장 멤버가 그 계정과 연결된다. */
     public record CreateTripRequest(
             @NotBlank @Size(max = 30) String name,
             @NotBlank @Size(max = 20) String nickname,
-            @NotBlank @Size(max = 20) String carLabel) {}
+            @NotBlank @Size(max = 20) String carLabel,
+            @Size(max = 64) String accountToken) {}
 
+    /** accountToken 은 선택. 넣으면 참여한 멤버가 그 계정과 연결된다. */
     public record JoinTripRequest(
             @NotBlank @Size(min = 6, max = 6) String inviteCode,
             @NotBlank @Size(max = 20) String nickname,
-            @NotBlank @Size(max = 20) String carLabel) {}
+            @NotBlank @Size(max = 20) String carLabel,
+            @Size(max = 64) String accountToken) {}
 
     public record ViewerJoinRequest(
             @NotBlank @Size(min = 6, max = 6) String inviteCode,
@@ -54,12 +61,14 @@ public class TripController {
 
     @PostMapping
     public JoinedTrip create(@Valid @RequestBody CreateTripRequest body) {
-        return trips.create(body.name(), body.nickname(), body.carLabel());
+        String accountId = accounts.accountIdForLink(body.accountToken());
+        return trips.create(body.name(), body.nickname(), body.carLabel(), accountId);
     }
 
     @PostMapping("/join")
     public JoinedTrip join(@Valid @RequestBody JoinTripRequest body) {
-        return trips.join(body.inviteCode(), body.nickname(), body.carLabel());
+        String accountId = accounts.accountIdForLink(body.accountToken());
+        return trips.join(body.inviteCode(), body.nickname(), body.carLabel(), accountId);
     }
 
     @PostMapping("/web-join")
