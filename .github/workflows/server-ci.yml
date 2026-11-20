@@ -30,6 +30,32 @@ jobs:
     defaults:
       run:
         working-directory: server
+
+    # 운영(Supabase)과 같은 PostgreSQL 로 테스트한다. H2 로는 확인되지 않는 표 생성(DDL), 잠금, 타입 차이를 PR 에서 잡기 위함.
+    # 실행이 끝나면 컨테이너와 함께 사라지는 빈 DB 라서 아래 비밀번호는 공개해도 되는 테스트 값이다.
+    # 이미지 버전은 Supabase 프로젝트의 PostgreSQL 주 버전과 맞춘다.
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: donghaeng_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        # DB 가 접속을 받을 준비가 된 뒤에 테스트를 시작한다.
+        options: >-
+          --health-cmd "pg_isready -U postgres -d donghaeng_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    # server/src/test/resources/application.properties 가 읽는 테스트 DB 주소(없으면 H2)
+    env:
+      TEST_DATABASE_URL: jdbc:postgresql://localhost:5432/donghaeng_test
+      TEST_DATABASE_USERNAME: postgres
+      TEST_DATABASE_PASSWORD: postgres
+
     steps:
       - name: 저장소 받기
         uses: actions/checkout@v7
