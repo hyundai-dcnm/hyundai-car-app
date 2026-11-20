@@ -58,24 +58,39 @@ public class TripService {
 
     // ───────── 방 만들기/참여/나가기 ─────────
 
+    /** 계정 없이 만들기(기존 테스트·호출용). 같은 클래스 안에서 부르므로 여기에도 @Transactional 이 필요하다. */
     @Transactional
     public JoinedTrip create(String name, String nickname, String carLabel) {
+        return create(name, nickname, carLabel, null);
+    }
+
+    /** accountId 가 있으면 방장 멤버를 그 계정과 연결한다(없으면 null). */
+    @Transactional
+    public JoinedTrip create(String name, String nickname, String carLabel, String accountId) {
         Instant now = Instant.now();
         TripEntity trip = trips.save(new TripEntity(newId(), name.trim(), newInviteCode(), now));
-        MemberEntity host = members.save(new MemberEntity(newId(), trip.getId(), nickname.trim(), carLabel.trim(), now));
+        MemberEntity host = members.save(
+                new MemberEntity(newId(), trip.getId(), nickname.trim(), carLabel.trim(), accountId, now));
         trip.setHostMemberId(host.getId());
         String token = tokens.issueForCar(trip.getId(), host.getId(), host.getCarLabel());
         return new JoinedTrip(toTrip(trip), host.getId(), token);
     }
 
+    /** 계정 없이 참여(기존 테스트·호출용). 같은 클래스 안에서 부르므로 여기에도 @Transactional 이 필요하다. */
     @Transactional
     public JoinedTrip join(String inviteCode, String nickname, String carLabel) {
+        return join(inviteCode, nickname, carLabel, null);
+    }
+
+    /** accountId 가 있으면 참여한 멤버를 그 계정과 연결한다(없으면 null). */
+    @Transactional
+    public JoinedTrip join(String inviteCode, String nickname, String carLabel, String accountId) {
         TripEntity trip = lockOpenTrip(openTripByCode(inviteCode).getId());
         if (activeMembers(trip.getId()).size() >= MAX_CARS) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "여행방이 가득 찼어요 (최대 " + MAX_CARS + "대)");
         }
         MemberEntity member = members.save(
-                new MemberEntity(newId(), trip.getId(), nickname.trim(), carLabel.trim(), Instant.now()));
+                new MemberEntity(newId(), trip.getId(), nickname.trim(), carLabel.trim(), accountId, Instant.now()));
         String token = tokens.issueForCar(trip.getId(), member.getId(), member.getCarLabel());
         publish(trip.getId(), new TripEvent.MemberJoined(toMember(member)));
         return new JoinedTrip(toTrip(trip), member.getId(), token);
