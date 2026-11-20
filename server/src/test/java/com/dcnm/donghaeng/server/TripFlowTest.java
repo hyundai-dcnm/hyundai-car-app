@@ -12,11 +12,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.web.server.ResponseStatusException;
 
-/** 서버 규칙 확인. 메모리 DB 로 돌아서 내 컴퓨터 data 폴더를 건드리지 않는다. */
-@SpringBootTest(properties = {
-        "spring.datasource.url=jdbc:h2:mem:flow;MODE=PostgreSQL;DB_CLOSE_DELAY=-1",
-        "storage.type=local"
-})
+/** 서버 규칙 확인. 테스트 DB 는 src/test/resources/application.properties 에서 정한다(내 컴퓨터는 메모리 DB, CI 는 PostgreSQL). */
+@SpringBootTest
 class TripFlowTest {
 
     @Autowired
