@@ -93,6 +93,11 @@ class AccountFlowTest {
 
         var empty = post("/api/accounts", "{\"nickname\":\"\",\"carLabel\":\"규원이 차\"}");
         assertThat(empty.statusCode()).isEqualTo(400);
+        assertThat(empty.body()).contains("\"message\":\"입력값을 확인해 주세요\"");
+
+        var broken = post("/api/accounts", "{\"nickname\":");
+        assertThat(broken.statusCode()).isEqualTo(400);
+        assertThat(broken.body()).contains("\"message\":\"요청 형식이 맞지 않아요\"");
 
         // 계정 토큰 없이 방 만들기는 예전처럼 된다(앱 1차 기능 보호).
         var trip = post("/api/trips", "{\"name\":\"양양 여행\",\"nickname\":\"규원\",\"carLabel\":\"규원이 차\"}");
@@ -102,6 +107,7 @@ class AccountFlowTest {
         var wrong = post("/api/trips",
                 "{\"name\":\"양양 여행\",\"nickname\":\"규원\",\"carLabel\":\"규원이 차\",\"accountToken\":\"not-a-real-token\"}");
         assertThat(wrong.statusCode()).isEqualTo(401);
+        assertThat(wrong.body()).contains("\"message\":\"계정 토큰이 맞지 않아요\"");
     }
 
     private int get(String path, String token) throws Exception {

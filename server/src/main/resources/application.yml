@@ -19,11 +19,13 @@ spring:
     multipart:
       max-file-size: 10MB
       max-request-size: 11MB
+  web:
+    error:
+      # 오류 응답에 message 를 넣는다(앱이 그대로 화면·음성에 사용). Spring Boot 4 부터 server.error.* 가 아니라 이 이름.
+      include-message: always
 
 server:
   port: ${PORT:8080}
-  error:
-    include-message: always
   # Render 같은 프록시 뒤에서 https 주소를 올바르게 알아보게 한다.
   forward-headers-strategy: framework
 
