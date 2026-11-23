@@ -14,6 +14,9 @@ java {
 }
 
 repositories {
+	// Render 빌드 서버의 Maven Central 429(요청 과다) 대비: Google 운영 Maven Central 복사본(미러) 먼저 조회
+	// 미러에 없는 파일(404)만 Maven Central에서 받음
+	maven("https://maven-central.storage-download.googleapis.com/maven2/")
 	mavenCentral()
 }
 
